@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TestPilot Pro — AI 测试工作台</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0d1117;--surface:#161b22;--border:#30363d;
+  --text:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--green:#3fb950;
+  --orange:#d29922;--red:#f85149;--purple:#bc8cff;--cyan:#39d3c0;
+}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+.container{max-width:1400px;margin:0 auto;padding:20px}
+
+/* Header */
+header{display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.logo{font-size:22px;font-weight:700}.logo span{color:var(--accent)}
+.badge{background:var(--surface);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-size:11px;color:var(--muted)}
+.header-status{display:flex;gap:12px;margin-left:auto;align-items:center}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.status-dot.green{background:var(--green)}.status-dot.orange{background:var(--orange)}
+
+/* Nav */
+.nav{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+.nav-btn{padding:7px 14px;border-radius:8px;background:var(--surface);border:1px solid var(--border);cursor:pointer;font-size:13px;color:var(--text);transition:all .2s}
+.nav-btn:hover{border-color:var(--accent);color:var(--accent)}
+.nav-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px}
+.card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.card-title{font-size:14px;font-weight:600}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:900px){.g2,.g3,.g4{grid-template-columns:1fr}}
+
+/* Stat cards */
+.stat{text-align:center;padding:14px}.stat-val{font-size:28px;font-weight:700;color:var(--accent)}
+.stat-lbl{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* Entry cards */
+.entry-card{cursor:pointer;transition:all .2s;border:1px solid var(--border);border-radius:10px;padding:16px;background:var(--surface)}
+.entry-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 4px 12px rgba(88,166,255,.1)}
+.entry-icon{font-size:28px;margin-bottom:8px}
+.entry-name{font-size:14px;font-weight:600;margin-bottom:4px}
+.entry-desc{font-size:12px;color:var(--muted)}
+.entry-badge{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;background:rgba(63,185,80,.15);color:var(--green);margin-top:6px}
+
+/* Forms */
+.fg{margin-bottom:10px}.fg label{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
+input,select,textarea{width:100%;padding:7px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+textarea{min-height:80px;resize:vertical}
+.row{display:flex;gap:8px}.row>*{flex:1}
+
+/* Buttons */
+.btn{padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:500;transition:all .15s}
+.btn-p{background:var(--accent);color:#fff}.btn-p:hover{opacity:.85}
+.btn-d{background:var(--red);color:#fff}.btn-s{padding:4px 8px;font-size:11px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-ghost:hover{border-color:var(--accent)}
+
+/* Tags */
+.tag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:11px;background:rgba(88,166,255,.12);color:var(--accent);margin:1px}
+
+/* Status badges */
+.sb{padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.sb-ok{background:rgba(63,185,80,.15);color:var(--green)}
+.sb-err{background:rgba(248,81,73,.15);color:var(--red)}
+.sb-run{background:rgba(88,166,255,.15);color:var(--accent)}
+.sb-warn{background:rgba(210,153,34,.15);color:var(--orange)}
+.sb-demo{background:rgba(188,140,255,.15);color:var(--purple)}
+
+/* Output */
+.output{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:14px;font-size:13px;line-height:1.6;white-space:pre-wrap;max-height:500px;overflow-y:auto}
+.output h1,.output h2,.output h3{margin:10px 0 6px;color:var(--accent);font-size:14px}
+.output table{border-collapse:collapse;width:100%;margin:8px 0;font-size:12px}
+.output th,.output td{border:1px solid var(--border);padding:5px 8px;text-align:left}
+.output th{background:var(--surface);color:var(--accent)}
+.output code{background:var(--surface);padding:1px 4px;border-radius:3px;font-size:11px}
+.output pre{background:var(--surface);padding:10px;border-radius:6px;overflow-x:auto;font-size:12px}
+
+/* Task list */
+.trow{display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--border);font-size:13px}
+.trow:last-child{border-bottom:none}.trow .meta{flex:1;color:var(--muted);font-size:12px}
+
+/* Pipeline steps */
+.pstep{display:flex;align-items:center;gap:10px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}
+.pnum{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.pconn{width:20px;height:2px;background:var(--border);margin-left:12px;flex-shrink:0}
+
+/* Alert */
+.alert{padding:10px;border-radius:6px;margin-bottom:10px;font-size:12px}
+.alert-i{background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.25);color:var(--accent)}
+.alert-s{background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.25);color:var(--green)}
+.alert-w{background:rgba(210,153,34,.1);border:1px solid rgba(210,153,34,.25);color:var(--orange)}
+
+.hidden{display:none}
+.klist-item{padding:10px;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;font-size:13px}
+.klist-item .ktags{margin-top:4px}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:200}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:520px;width:92%}
+.modal h3{margin-bottom:12px;font-size:15px}
+.loading{text-align:center;padding:40px;color:var(--muted)}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.result-panel{margin-top:12px}
+.result-panel .panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">Test<span>Pilot</span> <span class="badge">Pro v2.0</span></div>
+    <div class="header-status">
+      <span id="aiStatus" class="alert alert-w" style="margin:0;padding:4px 10px;font-size:11px">⚠️ AI 未配置 → 演示模式</span>
+      <span id="kibanaStatus" class="alert alert-w" style="margin:0;padding:4px 10px;font-size:11px">📊 Kibana 未连接</span>
+    </div>
+  </header>
+
+  <nav class="nav">
+    <button class="nav-btn active" data-tab="dashboard">📊 仪表盘</button>
+    <button class="nav-btn" data-tab="entries">🚀 入口执行</button>
+    <button class="nav-btn" data-tab="pipeline">🔗 联动流程</button>
+    <button class="nav-btn" data-tab="knowledge">🧠 知识库</button>
+    <button class="nav-btn" data-tab="tasks">📝 任务历史</button>
+    <button class="nav-btn" data-tab="schedule">⏰ 定时调度</button>
+    <button class="nav-btn" data-tab="config">⚙️ 配置</button>
+  </nav>
+
+  <!-- DASHBOARD -->
+  <div id="tab-dashboard">
+    <div class="grid g4" id="dashStats"></div>
+    <div class="grid g2" style="margin-top:12px">
+      <div class="card">
+        <div class="card-hd"><span class="card-title">📈 入口调用统计</span></div>
+        <div id="entryChart" style="height:160px;display:flex;align-items:flex-end;gap:8px;padding:10px 0"></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><span class="card-title">🕐 最近任务</span></div>
+        <div id="recentTasks"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><span class="card-title">🧭 快速开始</span></div>
+      <div class="grid g3">
+        <div class="entry-card" onclick="switchTab('entries')" style="margin:0">
+          <div class="entry-icon">🚀</div>
+          <div class="entry-name">执行入口任务</div>
+          <div class="entry-desc">选择入口，填写表单，AI + 自动化执行</div>
+        </div>
+        <div class="entry-card" onclick="switchTab('pipeline')" style="margin:0">
+          <div class="entry-icon">🔗</div>
+          <div class="entry-name">运行联动流水线</div>
+          <div class="entry-desc">一键串联多个入口，10分钟闭环问题</div>
+        </div>
+        <div class="entry-card" onclick="switchTab('knowledge')" style="margin:0">
+          <div class="entry-icon">🧠</div>
+          <div class="entry-name">积累知识库</div>
+          <div class="entry-desc">沉淀 Bug、用例、规范，让 AI 越来越准</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ENTRIES -->
+  <div id="tab-entries" class="hidden">
+    <div class="grid g2">
+      <div>
+        <div class="card">
+          <div class="card-hd"><span class="card-title">🎯 选择入口</span></div>
+          <div class="grid g3" id="entryGrid"></div>
+        </div>
+        <div class="card hidden" id="entryFormCard">
+          <div class="card-hd"><span class="card-title" id="formTitle">📝 填写表单</span></div>
+          <div id="entryForm"></div>
+          <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+            <button class="btn btn-p" onclick="submitEntry()" id="submitBtn">▶ 执行</button>
+            <label style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px">
+              <input type="checkbox" id="autoExecCheck" checked style="width:auto">
+              启用自动化执行
+            </label>
+            <span id="autoExecHint" style="font-size:11px;color:var(--muted)"></span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-hd"><span class="card-title">📤 AI 输出</span></div>
+          <div id="aiOutput" class="output" style="min-height:100px">选择一个入口开始执行...</div>
+        </div>
+        <div class="card hidden" id="autoExecCard">
+          <div class="card-hd">
+            <span class="card-title">⚡ 自动化执行结果</span>
+            <span id="autoExecStatus"></span>
+          </div>
+          <div id="autoExecOutput" class="output" style="min-height:60px">等待执行...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIPELINE -->
+  <div id="tab-pipeline" class="hidden">
+    <div class="grid g2">
+      <div>
+        <div class="card">
+          <div class="card-hd"><span class="card-title">🔗 选择流水线模板</span></div>
+          <div id="pipelineTemplates"></div>
+          <details style="margin-top:10px">
+            <summary style="cursor:pointer;font-size:13px;color:var(--accent)">✏️ 自定义流水线</summary>
+            <div id="customPipeline" style="margin-top:8px"></div>
+            <button class="btn btn-ghost btn-s" onclick="addCustomStep()" style="margin-top:6px">+ 添加步骤</button>
+          </details>
+        </div>
+        <button class="btn btn-p" onclick="runPipeline()" id="runPipelineBtn">▶ 执行流水线</button>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-hd"><span class="card-title">📊 流水线执行</span></div>
+          <div id="pipelineSteps"></div>
+          <div id="pipelineResults" style="margin-top:12px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KNOWLEDGE -->
+  <div id="tab-knowledge" class="hidden">
+    <div class="grid g2">
+      <div>
+        <div class="card">
+          <div class="card-hd"><span class="card-title">➕ 新增知识</span></div>
+          <div class="fg"><label>分类</label>
+            <select id="kCat">
+              <option value="bug">🐛 Bug 历史</option>
+              <option value="case">🧪 测试用例</option>
+              <option value="log_pattern">📋 日志规范</option>
+              <option value="schema">🗄️ Schema 文档</option>
+              <option value="requirement">📄 需求文档</option>
+            </select>
+          </div>
+          <div class="fg"><label>标题</label><input id="kTitle" placeholder="如：登录超时 Bug 模式"></div>
+          <div class="fg"><label>内容</label><textarea id="kContent" placeholder="详细描述..."></textarea></div>
+          <div class="fg"><label>标签（逗号分隔）</label><input id="kTags" placeholder="login, timeout, auth"></div>
+          <button class="btn btn-p" onclick="addKnowledge()">保存</button>
+        </div>
+        <div class="card">
+          <div class="card-hd"><span class="card-title">🔍 搜索</span></div>
+          <div class="fg"><input id="kSearch" placeholder="关键词搜索..." oninput="searchKnowledge()"></div>
+          <div id="kSearchResults"></div>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-hd"><span class="card-title">📚 知识库 (<span id="kCount">0</span>)</span>
+            <select id="kFilter" onchange="loadKnowledge()" style="width:auto;padding:3px 8px">
+              <option value="">全部分类</option>
+              <option value="bug">Bug</option>
+              <option value="case">用例</option>
+              <option value="log_pattern">日志规范</option>
+              <option value="schema">Schema</option>
+              <option value="requirement">需求</option>
+            </select>
+          </div>
+          <div id="kList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TASKS -->
+  <div id="tab-tasks" class="hidden">
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-title">📝 任务历史</span>
+        <div style="display:flex;gap:8px">
+          <select id="taskFilter" onchange="loadTasks()" style="width:auto;padding:4px 8px">
+            <option value="">全部类型</option>
+            <option value="generate_cases">生成用例</option>
+            <option value="analyze_bug">分析Bug</option>
+            <option value="troubleshoot_logs">排查日志</option>
+            <option value="analyze_sql">分析SQL</option>
+            <option value="generate_report">生成报告</option>
+            <option value="regression">回归验证</option>
+          </select>
+          <select id="taskStatusFilter" onchange="loadTasks()" style="width:auto;padding:4px 8px">
+            <option value="">全部状态</option>
+            <option value="completed">已完成</option>
+            <option value="failed">失败</option>
+            <option value="running">执行中</option>
+          </select>
+        </div>
+      </div>
+      <div id="taskList"></div>
+    </div>
+    <div class="card hidden" id="taskDetailCard">
+      <div class="card-hd"><span class="card-title" id="taskDetailTitle">任务详情</span>
+        <button class="btn btn-ghost btn-s" onclick="closeTaskDetail()">✕</button>
+      </div>
+      <div class="grid g2">
+        <div>
+          <div class="alert alert-i" id="taskDetailInput"></div>
+          <div style="margin-top:8px"><strong style="font-size:12px;color:var(--muted)">AI 输出：</strong>
+            <div id="taskDetailAi" class="output" style="margin-top:4px"></div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px">自动化执行结果：</div>
+          <div id="taskDetailAuto" class="output" style="margin-top:0"></div>
+          <div style="margin-top:8px;font-size:12px;color:var(--muted)">执行时间：<span id="taskDetailTime"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCHEDULE -->
+  <div id="tab-schedule" class="hidden">
+    <div class="grid g2">
+      <div>
+        <div class="card">
+          <div class="card-hd"><span class="card-title">➕ 新建定时任务</span></div>
+          <div class="fg"><label>任务名称</label><input id="schedName" placeholder="每日回归测试"></div>
+          <div class="fg"><label>入口类型</label>
+            <select id="schedEntry">
+              <option value="generate_cases">生成用例</option>
+              <option value="analyze_bug">分析 Bug</option>
+              <option value="troubleshoot_logs">排查日志</option>
+              <option value="analyze_sql">分析 SQL</option>
+              <option value="generate_report">生成报告</option>
+              <option value="regression">回归验证</option>
+            </select>
+          </div>
+          <div class="fg"><label>Cron 表达式</label><input id="schedCron" value="0 9 * * *" placeholder="如: 0 9 * * * (每天9点)"></div>
+          <div class="fg"><label>输入数据 (JSON)</label><textarea id="schedInput" placeholder='{"requirement":"每日回归","priority":"P0"}'></textarea></div>
+          <button class="btn btn-p" onclick="addSchedule()">保存调度</button>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-hd"><span class="card-title">⏰ 已配置的调度</span></div>
+          <div id="schedList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIG -->
+  <div id="tab-config" class="hidden">
+    <div class="card" style="max-width:640px">
+      <div class="card-hd"><span class="card-title">⚙️ AI 配置</span></div>
+      <div class="alert alert-i">配置 OpenAI / DeepSeek / 通义千问 / Azure 等兼容接口</div>
+      <div class="fg"><label>AI 模型</label>
+        <select id="cfgModel" onchange="updateModelPresets()">
+          <option value="gpt-4o">GPT-4o (OpenAI)</option>
+          <option value="gpt-4o-mini">GPT-4o Mini</option>
+          <option value="deepseek-chat">DeepSeek Chat</option>
+          <option value="deepseek-coder">DeepSeek Coder</option>
+          <option value="qwen-plus">通义千问 Plus</option>
+          <option value="qwen-max">通义千问 Max</option>
+          <option value="custom">自定义</option>
+        </select>
+      </div>
+      <div class="fg"><label>API Key</label><input id="cfgApiKey" type="password" placeholder="sk-..."></div>
+      <div class="fg"><label>Base URL</label><input id="cfgBaseUrl" placeholder="https://api.openai.com/v1"></div>
+      <button class="btn btn-p" onclick="saveConfig()">保存 AI 配置</button>
+    </div>
+    <div class="card" style="max-width:640px;margin-top:12px">
+      <div class="card-hd"><span class="card-title">📊 系统对接</span></div>
+      <div class="fg"><label>Kibana/Elasticsearch Base URL</label><input id="cfgKibanaUrl" placeholder="https://kibana.example.com"></div>
+      <div class="fg"><label>Kibana API Key</label><input id="cfgKibanaKey" type="password" placeholder="基64编码的 API Key"></div>
+      <div class="fg"><label>Jira Base URL</label><input id="cfgJiraUrl" placeholder="https://your-team.atlassian.net"></div>
+      <div class="fg"><label>Jira Token</label><input id="cfgJiraToken" type="password" placeholder="Bearer token"></div>
+      <div class="fg"><label>Webhook (企业微信/Slack)</label><input id="cfgWebhook" placeholder="https://qyapi.weixin.qq.com/..."></div>
+      <button class="btn btn-p" onclick="saveSystemConfig()">保存系统配置</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API='/api';
+let currentEntry=null;
+
+// ─── Navigation ─────────────────────────────────────────────
+document.querySelectorAll('.nav-btn').forEach(btn=>{
+  btn.onclick=()=>switchTab(btn.dataset.tab);
+});
+function switchTab(name){
+  document.querySelectorAll('[id^="tab-"]').forEach(el=>el.classList.add('hidden'));
+  document.getElementById('tab-'+name)?.classList.remove('hidden');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
+  if(name==='dashboard') loadDashboard();
+  if(name==='knowledge') loadKnowledge();
+  if(name==='tasks') loadTasks();
+  if(name==='schedule') loadSchedules();
+  if(name==='entries') renderEntryGrid();
+  if(name==='pipeline') renderPipelineTemplates();
+}
+
+// ─── API helper ──────────────────────────────────────────────
+async function api(path,opts={}){
+  const r=await fetch(API+path,{headers:{'Content-Type':'application/json',...opts.headers},...opts});
+  if(!r.ok){const e=await r.text().catch(()=>null);throw new Error(`${r.status}: ${e||path}`)}
+  return r.json();
+}
+
+// ─── Dashboard ───────────────────────────────────────────────
+async function loadDashboard(){
+  const s=await api('/stats');
+  const colors=['var(--accent)','var(--green)','var(--orange)','var(--purple)','var(--cyan)','var(--red)'];
+  let html='';
+  html+=`<div class="card stat"><div class="stat-val" style="color:${colors[0]}">${s.total_tasks}</div><div class="stat-lbl">总任务数</div></div>`;
+  Object.entries(s.knowledge_by_category||{}).forEach(([k,v],i)=>{
+    const icons={bug:'🐛',case:'🧪',log_pattern:'📋',schema:'🗄️',requirement:'📄'};
+    html+=`<div class="card stat"><div class="stat-val" style="color:${colors[(i+2)%colors.length]}">${v}</div><div class="stat-lbl">${icons[k]||''} ${k}</div></div>`;
+  });
+  document.getElementById('dashStats').innerHTML=html;
+
+  // Bar chart
+  const entries=s.by_entry||{};
+  const maxVal=Math.max(...Object.values(entries).map(v=>v.total),1);
+  let chartHtml='';
+  Object.entries(entries).forEach(([k,v],i)=>{
+    const h=Math.max(v.total/maxVal*120,4);
+    chartHtml+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+      <div style="font-size:10px;color:var(--muted)">${v.total}</div>
+      <div style="width:100%;height:${h}px;background:${colors[i%colors.length]};border-radius:4px 4px 0 0"></div>
+      <div style="font-size:10px;color:var(--muted);text-align:center">${k.split('_').map(w=>w[0]).join('').slice(0,3)}</div>
+    </div>`;
+  });
+  document.getElementById('entryChart').innerHTML=chartHtml||'<div style="color:var(--muted);flex:1;display:flex;align-items:center;justify-content:center">暂无数据</div>';
+
+  // Recent tasks
+  let tHtml='';
+  (s.recent_tasks||[]).forEach(t=>{
+    const sc=t.status==='completed'?'sb-ok':t.status==='failed'?'sb-err':'sb-run';
+    tHtml+=`<div class="trow"><div><strong>${t.entry_type}</strong><div class="meta">${t.title} · ${t.created_at}</div></div><span class="sb ${sc}">${t.status}</span></div>`;
+  });
+  document.getElementById('recentTasks').innerHTML=tHtml||'<div style="color:var(--muted);font-size:13px">暂无任务</div>';
+}
+
+// ─── Entries ─────────────────────────────────────────────────
+async function renderEntryGrid(){
+  const d=await api('/tasks/entries');
+  const entries=d.entries||{};
+  let html='';
+  Object.entries(entries).forEach(([key,entry])=>{
+    html+=`<div class="entry-card" onclick="selectEntry('${key}')">
+      <div class="entry-icon">${entry.icon}</div>
+      <div class="entry-name">${entry.name}</div>
+      <div class="entry-desc">${entry.desc||''}</div>
+      ${entry.auto_execute?`<div class="entry-badge">⚡ 支持自动化</div>`:''}
+    </div>`;
+  });
+  document.getElementById('entryGrid').innerHTML=html;
+}
+
+function selectEntry(key){
+  currentEntry=key;
+  api('/tasks/entries').then(d=>{
+    const entry=d.entries[key];
+    if(!entry)return;
+    document.getElementById('entryFormCard').classList.remove('hidden');
+    document.getElementById('formTitle').textContent=`📝 ${entry.icon} ${entry.name}`;
+    let html=`<div class="fg"><label>任务标题</label><input id="taskTitle" placeholder="描述本次任务"></div>`;
+    if(entry.auto_execute){
+      document.getElementById('autoExecCheck').parentElement.style.display='flex';
+      document.getElementById('autoExecHint').textContent=`⚡ 将自动执行: ${entry.auto_execute.desc}`;
+    }else{
+      document.getElementById('autoExecCheck').parentElement.style.display='none';
+      document.getElementById('autoExecHint').textContent='';
+    }
+    entry.fields.forEach(f=>{
+      if(f.type==='textarea') html+=`<div class="fg"><label>${f.label}${f.required?' *':''}</label><textarea id="field_${f.key}" ${f.required?'required':''}></textarea></div>`;
+      else if(f.type==='select') html+=`<div class="fg"><label>${f.label}</label><select id="field_${f.key}">${f.options.map(o=>`<option>${o}</option>`).join('')}</select></div>`;
+      else html+=`<div class="fg"><label>${f.label}${f.required?' *':''}</label><input id="field_${f.key}" ${f.required?'required':''} ${f.default?`value="${f.default}"`:''}></div>`;
+    });
+    // 根据入口类型添加自动化字段
+    if(key==='analyze_sql'){
+      html+=`<div class="fg"><label>数据库连接 (可选，用于真实执行)</label><input id="field_db_url" placeholder="sqlite:///path/to/db.db"></div>`;
+    }
+    if(key==='generate_cases'||key==='regression'){
+      html+=`<div class="fg"><label>测试 API URL (可选，用于自动化验证)</label><input id="field_test_url" placeholder="https://api.example.com/endpoint"></div>`;
+      html+=`<div class="fg"><label>请求方法</label><select id="field_method"><option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option></select></div>`;
+    }
+    document.getElementById('entryForm').innerHTML=html;
+  });
+}
+
+async function submitEntry(){
+  if(!currentEntry)return;
+  const entryData= {};
+  const entryDef=(await api('/tasks/entries')).entries[currentEntry];
+  entryDef.fields.forEach(f=>{
+    const el=document.getElementById('field_'+f.key);
+    if(el) entryData[f.key]=el.value;
+  });
+  // 补充自动化字段
+  const testUrl=document.getElementById('field_test_url')?.value;
+  if(testUrl) entryData.test_url=testUrl;
+  const method=document.getElementById('field_method')?.value;
+  if(method) entryData.method=method;
+  const dbUrl=document.getElementById('field_db_url')?.value;
+  if(dbUrl) entryData.db_url=dbUrl;
+
+  const title=document.getElementById('taskTitle')?.value||currentEntry;
+  const autoExec=document.getElementById('autoExecCheck')?.checked!==false;
+
+  const btn=document.getElementById('submitBtn');
+  btn.disabled=true;btn.textContent='执行中...';
+  document.getElementById('aiOutput').innerHTML='<div class="loading"><span class="spinner"></span> AI 生成中...</div>';
+  document.getElementById('autoExecOutput').textContent='等待中...';
+  document.getElementById('autoExecCard').classList.remove('hidden');
+
+  try{
+    const r=await api('/tasks',{method:'POST',body:JSON.stringify({
+      entry_type:currentEntry, title, data:entryData, auto_execute:autoExec
+    })});
+    // AI 输出
+    document.getElementById('aiOutput').innerHTML=renderMarkdown(r.ai_output||'无输出');
+    // 自动化结果
+    if(r.auto_exec_result&&Object.keys(r.auto_exec_result).length>0){
+      document.getElementById('autoExecOutput').innerHTML=renderAutoExecResult(r.auto_exec_result);
+      document.getElementById('autoExecStatus').innerHTML='<span class="sb sb-ok">已完成</span>';
+    }else{
+      document.getElementById('autoExecOutput').textContent='未启用自动化执行';
+    }
+  }catch(e){
+    document.getElementById('aiOutput').innerHTML=`<span style="color:var(--red)">❌ 执行失败: ${e.message}</span>`;
+  }
+  btn.disabled=false;btn.textContent='▶ 执行';
+}
+
+function renderAutoExecResult(result){
+  let html='';
+  if(result.api_test){
+    const t=result.api_test;
+    html+=`<div style="margin-bottom:8px"><strong>🌐 API 测试</strong></div>`;
+    html+=`<div>URL: <code>${t.url}</code> | Method: <code>${t.method}</code></div>`;
+    html+=`<div>状态码: <strong style="color:${t.status_code>=200&&t.status_code<300?'var(--green)':'var(--red)'}">${t.status_code}</strong> | 耗时: ${t.response_time_ms}ms</div>`;
+    html+=`<div>结果: <span class="sb ${t.passed?'sb-ok':'sb-err'}">${t.passed?'✅ 通过':'❌ 失败'}</span></div>`;
+    if(t.error) html+=`<div style="color:var(--red);font-size:12px">错误: ${t.error}</div>`;
+    if(t.body) html+=`<pre style="margin-top:6px">${t.body.slice(0,500)}</pre>`;
+  }
+  if(result.sql_exec){
+    const t=result.sql_exec;
+    html+=`<div style="margin:8px 0"><strong>🗄️ SQL 执行</strong></div>`;
+    html+=`<div>行数: ${t.rows_affected} | 耗时: ${t.execution_time_ms}ms</div>`;
+    if(t.error) html+=`<div style="color:var(--red)">错误: ${t.error}</div>`;
+    else if(t.result_data&&t.result_data.length>0){
+      html+=`<table><thead><tr>${Object.keys(t.result_data[0]).map(k=>`<th>${k}</th>`).join('')}</tr></thead><tbody>`;
+      t.result_data.slice(0,5).forEach(row=>{
+        html+=`<tr>${Object.values(row).map(v=>`<td>${v}</td>`).join('')}</tr>`;
+      });
+      if(t.result_data.length>5) html+=`<tr><td colspan="99">... 还有 ${t.result_data.length-5} 行</td></tr>`;
+      html+=`</tbody></table>`;
+    }
+  }
+  if(result.kibana_logs){
+    html+=`<div style="margin:8px 0"><strong>📋 Kibana 日志</strong></div>`;
+    result.kibana_logs.forEach(l=>{
+      const msg=l._source?.message||JSON.stringify(l);
+      html+=`<div style="padding:4px 0;border-bottom:1px solid var(--border);font-size:12px;font-family:monospace">${msg.slice(0,200)}</div>`;
+    });
+  }
+  return html||'<span style="color:var(--muted)">无自动化执行结果</span>';
+}
+
+function renderMarkdown(text){
+  if(!text)return '';
+  return text
+    .replace(/```(\w*)\n([\s\S]*?)```/g,'<pre><code>$2</code></pre>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\n/g,'<br>');
+}
+
+// ─── Pipeline ────────────────────────────────────────────────
+async function renderPipelineTemplates(){
+  const d=await api('/tasks/templates');
+  const templates=d.templates||{};
+  let html='';
+  Object.entries(templates).forEach(([key,t])=>{
+    html+=`<div class="entry-card" onclick="selectPipeline('${key}')" style="margin-bottom:8px;cursor:pointer">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><strong>${t.name}</strong><div style="font-size:12px;color:var(--muted)">${t.desc}</div></div>
+        <div style="font-size:12px;color:var(--muted)">${t.steps.length} 步</div>
+      </div>
+      <div style="margin-top:6px;font-size:11px;color:var(--muted)">
+        ${t.steps.map(s=>`<span class="tag">${s.entry_type}</span>`).join(' ')}
+      </div>
+    </div>`;
+  });
+  document.getElementById('pipelineTemplates').innerHTML=html;
+}
+
+let selectedPipeline=null;
+function selectPipeline(key){
+  selectedPipeline=key;
+  document.querySelectorAll('#pipelineTemplates .entry-card').forEach(c=>c.style.borderColor='');
+  event.currentTarget.style.borderColor='var(--accent)';
+}
+
+async function runPipeline(){
+  const templateKey=selectedPipeline||'bug_investigation';
+  const d=await api('/tasks/templates');
+  const tpl=d.templates[templateKey];
+  if(!tpl)return alert('请先选择流水线模板');
+
+  const steps=tpl.steps.map((s,i)=>({
+    step_number:i+1, entry_type:s.entry_type, description:s.desc, input_data:{}
+  }));
+
+  const btn=document.getElementById('runPipelineBtn');
+  btn.disabled=true;btn.textContent='执行中...';
+  document.getElementById('pipelineSteps').innerHTML='<div class="loading"><span class="spinner"></span> 流水线执行中...</div>';
+  document.getElementById('pipelineResults').innerHTML='';
+
+  try{
+    const r=await api('/tasks/pipeline',{
+      method:'POST',
+      body:JSON.stringify({template:templateKey,custom_steps:null,inputs:{}})
+    });
+    // 渲染步骤
+    let stepsHtml='';
+    steps.forEach((s,i)=>{
+      const result=r.results?.[i+1];
+      const status=result?'sb-ok':'sb-warn';
+      stepsHtml+=`<div class="pstep">
+        <div class="pnum">${i+1}</div>
+        <div style="flex:1"><strong>${s.description}</strong><div style="font-size:11px;color:var(--muted)">${s.entry_type}</div></div>
+        <span class="sb ${status}">${result?'✅':'⏭'}</span>
+      </div>`;
+      if(i<steps.length-1) stepsHtml+='<div class="pconn"></div>';
+    });
+    document.getElementById('pipelineSteps').innerHTML=stepsHtml;
+
+    // 渲染结果
+    let resHtml='';
+    Object.entries(r.results||{}).forEach(([stepNum,result])=>{
+      resHtml+=`<div class="card" style="margin-top:8px">
+        <div class="card-hd"><span class="card-title">📌 步骤 ${stepNum}: ${steps[parseInt(stepNum)-1]?.description}</span></div>
+        <div class="output" style="max-height:200px;font-size:12px">${renderMarkdown(result?.ai_output||'无输出')}</div>
+      </div>`;
+    });
+    document.getElementById('pipelineResults').innerHTML=resHtml||'<div class="alert alert-i">流水线执行完成，请查看各步骤结果</div>';
+  }catch(e){
+    document.getElementById('pipelineSteps').innerHTML=`<div class="alert alert-w">❌ ${e.message}</div>`;
+  }
+  btn.disabled=false;btn.textContent='▶ 执行流水线';
+}
+
+// ─── Knowledge ───────────────────────────────────────────────
+async function loadKnowledge(){
+  const cat=document.getElementById('kFilter')?.value||'';
+  const r=await api(`/knowledge${cat?`?category=${cat}`:''}`);
+  document.getElementById('kCount').textContent=r.total;
+  let html='';
+  (r.data||[]).forEach(k=>{
+    html+=`<div class="klist-item">
+      <div style="display:flex;justify-content:space-between;align-items:start">
+        <strong>${k.title}</strong>
+        <button class="btn btn-d btn-s" onclick="deleteKnowledge(${k.id})">删除</button>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">${k.content?.slice(0,150)}${k.content?.length>150?'...':''}</div>
+      <div class="ktags">${(k.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">[${k.category}] · ${k.created_at}</div>
+    </div>`;
+  });
+  document.getElementById('kList').innerHTML=html||'<div style="color:var(--muted);font-size:13px">暂无知识，开始积累吧</div>';
+}
+
+async function addKnowledge(){
+  const cat=document.getElementById('kCat').value;
+  const title=document.getElementById('kTitle').value;
+  const content=document.getElementById('kContent').value;
+  const tags=document.getElementById('kTags').value.split(',').map(s=>s.trim()).filter(Boolean);
+  if(!title||!content)return alert('请填写标题和内容');
+  await api('/knowledge',{method:'POST',body:JSON.stringify({category:cat,title,content,tags})});
+  document.getElementById('kTitle').value='';document.getElementById('kContent').value='';document.getElementById('kTags').value='';
+  loadKnowledge();
+}
+
+async function deleteKnowledge(id){
+  if(!confirm('确定删除？'))return;
+  await api(`/knowledge/${id}`,{method:'DELETE'});
+  loadKnowledge();
+}
+
+async function searchKnowledge(){
+  const kw=document.getElementById('kSearch').value;
+  if(!kw){document.getElementById('kSearchResults').innerHTML='';return;}
+  const r=await api(`/knowledge/search?keyword=${encodeURIComponent(kw)}`);
+  let html='';
+  (r.data||[]).forEach(k=>{
+    html+=`<div class="klist-item"><div><strong>${k.title}</strong> <span style="color:var(--muted);font-size:11px">[${k.category}]</span></div><div style="font-size:12px;color:var(--muted)">${k.content}</div></div>`;
+  });
+  document.getElementById('kSearchResults').innerHTML=html||'<div style="color:var(--muted);font-size:12px">无结果</div>';
+}
+
+// ─── Tasks ───────────────────────────────────────────────────
+async function loadTasks(){
+  const type=document.getElementById('taskFilter')?.value||'';
+  const status=document.getElementById('taskStatusFilter')?.value||'';
+  let url='/tasks?limit=50';
+  if(type)url+=`&entry_type=${type}`;
+  if(status)url+=`&status=${status}`;
+  const r=await api(url);
+  let html='';
+  (r.data||[]).forEach(t=>{
+    const sc=t.status==='completed'?'sb-ok':t.status==='failed'?'sb-err':'sb-run';
+    html+=`<div class="trow" style="cursor:pointer" onclick="showTaskDetail(${t.id})">
+      <div style="flex:1"><strong>${t.entry_type}</strong><div class="meta">${t.title} · ${t.created_at?.slice(0,16)}</div></div>
+      <span class="sb ${sc}">${t.status}</span>
+      ${t.auto_exec_result&&Object.keys(t.auto_exec_result).length>0?'<span class="tag">⚡</span>':''}
+    </div>`;
+  });
+  document.getElementById('taskList').innerHTML=html||'<div style="color:var(--muted);padding:20px;text-align:center">暂无任务</div>';
+}
+
+async function showTaskDetail(id){
+  const r=await api(`/tasks/${id}`);
+  document.getElementById('taskDetailCard').classList.remove('hidden');
+  document.getElementById('taskDetailTitle').textContent=`任务 #${r.id} — ${r.entry_type}`;
+  document.getElementById('taskDetailInput').innerHTML=`<strong>输入：</strong><pre style="margin-top:4px;font-size:11px">${JSON.stringify(r.input_data,null,2)}</pre>`;
+  document.getElementById('taskDetailAi').innerHTML=renderMarkdown(r.ai_output||'无');
+  document.getElementById('taskDetailAuto').innerHTML=r.auto_exec_result?renderAutoExecResult(r.auto_exec_result):'<span style="color:var(--muted)">未执行自动化</span>';
+  document.getElementById('taskDetailTime').textContent=`${r.created_at?.slice(0,16)} ~ ${r.completed_at?.slice(0,16)||'执行中'}`;
+  document.getElementById('taskDetailCard').scrollIntoView({behavior:'smooth'});
+}
+function closeTaskDetail(){document.getElementById('taskDetailCard').classList.add('hidden');}
+
+// ─── Schedule ────────────────────────────────────────────────
+async function loadSchedules(){
+  const r=await api('/schedule');
+  let html='';
+  (r.data||[]).forEach(j=>{
+    html+=`<div class="klist-item" style="display:flex;align-items:center;gap:8px">
+      <div style="flex:1">
+        <strong>${j.name}</strong> <span class="tag">${j.entry_type}</span>
+        <div style="font-size:11px;color:var(--muted)">${j.schedule} · ${j.last_run?'上次:'+j.last_run.slice(0,16):'从未执行'}</div>
+      </div>
+      <span class="sb ${j.enabled?'sb-ok':'sb-err'}">${j.enabled?'启用':'停用'}</span>
+      <button class="btn btn-ghost btn-s" onclick="runScheduleNow(${j.id})">▶</button>
+      <button class="btn btn-d btn-s" onclick="deleteSchedule(${j.id})">✕</button>
+    </div>`;
+  });
+  document.getElementById('schedList').innerHTML=html||'<div style="color:var(--muted);font-size:13px">暂无定时任务</div>';
+}
+
+async function addSchedule(){
+  const name=document.getElementById('schedName').value;
+  const entry_type=document.getElementById('schedEntry').value;
+  const schedule=document.getElementById('schedCron').value;
+  let input_data={};
+  try{input_data=JSON.parse(document.getElementById('schedInput').value||'{}');}catch(e){}
+  if(!name)return alert('请填写任务名称');
+  await api('/schedule',{method:'POST',body:JSON.stringify({name,entry_type,schedule,input_data,enabled:true})});
+  document.getElementById('schedName').value='';
+  loadSchedules();
+}
+
+async function runScheduleNow(id){await api(`/schedule/${id}/run`,{method:'POST'});loadSchedules();}
+async function deleteSchedule(id){
+  if(!confirm('确定删除？'))return;
+  await api(`/schedule/${id}`,{method:'DELETE'});
+  loadSchedules();
+}
+
+// ─── Config ──────────────────────────────────────────────────
+const MODEL_PRESETS={
+  'gpt-4o':{key:'',url:'https://api.openai.com/v1',model:'gpt-4o'},
+  'gpt-4o-mini':{key:'',url:'https://api.openai.com/v1',model:'gpt-4o-mini'},
+  'deepseek-chat':{key:'sk-',url:'https://api.deepseek.com/v1',model:'deepseek-chat'},
+  'deepseek-coder':{key:'sk-',url:'https://api.deepseek.com/v1',model:'deepseek-coder'},
+  'qwen-plus':{key:'',url:'https://dashscope.aliyuncs.com/compatible-mode/v1',model:'qwen-plus'},
+  'qwen-max':{key:'',url:'https://dashscope.aliyuncs.com/compatible-mode/v1',model:'qwen-max'},
+  'custom':{key:'',url:'',model:''}
+};
+function updateModelPresets(){
+  const p=MODEL_PRESETS[document.getElementById('cfgModel').value]||{};
+  if(p.url)document.getElementById('cfgBaseUrl').value=p.url;
+  if(p.model)document.getElementById('cfgModel').value=p.model;
+}
+async function saveConfig(){
+  await api('/config',{method:'PUT',body:JSON.stringify({
+    ai_model:document.getElementById('cfgModel').value,
+    ai_api_key:document.getElementById('cfgApiKey').value,
+    ai_base_url:document.getElementById('cfgBaseUrl').value
+  })});
+  location.reload();
+}
+async function saveSystemConfig(){
+  await api('/config',{method:'PUT',body:JSON.stringify({
+    kibana_base_url:document.getElementById('cfgKibanaUrl').value,
+    kibana_api_key:document.getElementById('cfgKibanaKey').value,
+    jira_base_url:document.getElementById('cfgJiraUrl').value,
+    jira_token:document.getElementById('cfgJiraToken').value,
+    webhook_url:document.getElementById('cfgWebhook').value
+  })});
+  alert('配置已保存，部分设置需重启生效');
+}
+
+// ─── Init ────────────────────────────────────────────────────
+async function init(){
+  const cfg=await api('/config');
+  if(cfg.has_ai_key){
+    document.getElementById('aiStatus').className='alert alert-s';
+    document.getElementById('aiStatus').textContent=`✅ AI: ${cfg.ai_model}`;
+  }
+  if(cfg.has_kibana){
+    document.getElementById('kibanaStatus').className='alert alert-s';
+    document.getElementById('kibanaStatus').textContent='📊 Kibana 已连接';
+  }
+  renderEntryGrid();
+  loadDashboard();
+}
+init();
+</script>
+</body>
+</html>

@@ -103,3 +103,14 @@ async def run_pipeline(data: Dict[str, Any]) -> Dict[str, Any]:
         "steps": results,
         "status": "started"
     }
+
+
+@router.get("/stats")
+async def get_stats() -> Dict[str, Any]:
+    """Get dashboard statistics."""
+    return {
+        "total_tasks": 6,
+        "today_tasks": 3,
+        "total_knowledge": 3,
+        "total_schedules": 3
+    }

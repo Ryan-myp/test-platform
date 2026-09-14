@@ -16,6 +16,24 @@ async def get_db():
         yield session
 
 
+
+@router.get("/templates")
+async def get_templates() -> Dict[str, Any]:
+    """Get task templates."""
+    return {
+        "templates": {
+            "generate_cases": {
+                "prompt": "请为以下需求生成测试用例：\\n\\n{requirement}",
+                "fields": ["requirement", "module"]
+            },
+            "analyze_bug": {
+                "prompt": "请分析以下 Bug 并定位根因：\\n\\n{description}",
+                "fields": ["description", "reproduction_steps"]
+            }
+        }
+    }
+
+
 @router.get("")
 async def list_tasks(
     entry_type: Optional[str] = None,

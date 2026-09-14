@@ -10,6 +10,10 @@ import os
 from pathlib import Path
 from pydantic_settings import BaseSettings
 
+# 加载 .env 文件
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).parent.parent / ".env")
+
 
 class Settings(BaseSettings):
     app_name: str = "TestPilot Pro"

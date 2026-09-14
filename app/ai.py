@@ -5,7 +5,7 @@ import openai
 from datetime import datetime, timezone
 from loguru import logger
 from app.config import settings
-from app.database import AsyncSessionLocal, _exec
+from app.database import AsyncSessionLocal
 from sqlalchemy import text as sa_text
 
 

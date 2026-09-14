@@ -6,7 +6,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 from loguru import logger
 from playwright.async_api import async_playwright, Page, Browser
-from app.database import AsyncSessionLocal, _exec
+from app.database import AsyncSessionLocal
 
 SCREENSHOT_DIR = Path(__file__).parent.parent / "screenshots"
 SCREENSHOT_DIR.mkdir(exist_ok=True)
@@ -145,7 +145,7 @@ class BrowserTestExecutor:
 
         # 持久化结果
         async with AsyncSessionLocal() as session:
-            await _exec(session, """
+            await (await engine.connect()).execute(session, """
                 INSERT INTO browser_test_results (task_id, url, cases, passed_count,
                     failed_count, total_count, duration_ms, results, screenshot_dir)
                 VALUES (:task_id, :url, :cases, :passed, :failed, :total, :duration_ms, :results, :dir)

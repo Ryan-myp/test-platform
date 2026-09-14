@@ -9,6 +9,10 @@ import sys
 from app.config import settings
 from app.database import init_db, seed_prompts, AsyncSessionLocal
 from app.api import knowledge_router, tasks_router, schedule_router, config_router, stats_router, browser_router
+from app.api import test_cases as test_cases_router
+from app.api import test_suites as test_suites_router
+from app.api import executions as executions_router
+from app.api import bugs as bugs_router
 
 
 @asynccontextmanager
@@ -18,7 +22,7 @@ async def lifespan(app: FastAPI):
     logger.info(f"🚀 Starting {settings.app_name} v{settings.version}")
     await init_db()
     async with AsyncSessionLocal() as session:
-        await seed_prompts(session)
+        await seed_prompts()
     logger.info("✅ Database initialized")
     logger.info(f"🤖 AI Model: {settings.ai_model} | API Key: {'✅' if settings.ai_api_key else '❌'}")
     logger.info(f"📊 Kibana: {'✅' if settings.kibana_base_url else '❌'} | Jira: {'✅' if settings.jira_base_url else '❌'}")
@@ -49,6 +53,10 @@ app.include_router(schedule_router)
 app.include_router(config_router)
 app.include_router(stats_router)
 app.include_router(browser_router)
+app.include_router(test_cases_router.router)
+app.include_router(test_suites_router.router)
+app.include_router(executions_router.router)
+app.include_router(bugs_router.router)
 
 
 @app.get("/", response_class=HTMLResponse)

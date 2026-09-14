@@ -85,6 +85,38 @@ ENTRY_DEFS = {
             "type": "api_test",
             "desc": "执行回归 API 测试"
         }
+    },
+    # ── 新增：Web UI 自动化测试入口 ──
+    "web_ui_test": {
+        "name": "Web UI 自动化测试",
+        "icon": "🌐",
+        "desc": "使用浏览器自动化执行 UI 测试，支持截图和断言",
+        "fields": [
+            {"key": "url", "label": "目标 URL", "type": "text", "required": True},
+            {"key": "viewport", "label": "视口大小", "type": "text", "default": "1920x1080"},
+            {"key": "cases_json", "label": "测试用例（JSON数组）", "type": "textarea",
+             "placeholder": '[{"id":"TC001","name":"登录测试","steps":[{"action":"fill","target":"input[name=email]","value":"test@example.com"},{"action":"fill","target":"input[name=password]","value":"123456"},{"action":"click","target":"button[type=submit]"}]}]'},
+            {"key": "wait_for", "label": "等待元素（可选）", "type": "text"},
+        ],
+        "auto_execute": {
+            "type": "browser_test",
+            "desc": "启动浏览器执行 UI 自动化测试"
+        }
+    },
+    # ── 新增：AI 辅助用例生成 + 自动执行 ──
+    "ai_test_generation": {
+        "name": "AI 生成 + 执行测试",
+        "icon": "🤖",
+        "desc": "AI 根据需求生成测试用例并自动在浏览器中执行",
+        "fields": [
+            {"key": "url", "label": "目标网站 URL", "type": "text", "required": True},
+            {"key": "feature", "label": "测试功能描述", "type": "textarea", "required": True},
+            {"key": "priority", "label": "优先级", "type": "select", "options": ["P0", "P1", "P2"]},
+        ],
+        "auto_execute": {
+            "type": "ai_browser_test",
+            "desc": "AI 生成用例 → 浏览器自动执行 → 截图记录"
+        }
     }
 }
 
@@ -114,6 +146,14 @@ PIPELINE_TEMPLATES = {
         "desc": "回归验证 → 生成报告",
         "steps": [
             {"entry_type": "regression", "desc": "回归验证"},
+            {"entry_type": "generate_report", "desc": "生成测试报告"},
+        ]
+    },
+    "web_ui_automation": {
+        "name": "Web UI 自动化测试",
+        "desc": "AI 生成用例 → 浏览器执行 → 截图记录 → 生成报告",
+        "steps": [
+            {"entry_type": "ai_test_generation", "desc": "AI 生成并执行 UI 测试"},
             {"entry_type": "generate_report", "desc": "生成测试报告"},
         ]
     }

@@ -8,7 +8,7 @@ import sys
 
 from app.config import settings
 from app.database import init_db, seed_prompts, AsyncSessionLocal
-from app.api import knowledge_router, tasks_router, schedule_router, config_router, stats_router
+from app.api import knowledge_router, tasks_router, schedule_router, config_router, stats_router, browser_router
 
 
 @asynccontextmanager
@@ -48,6 +48,7 @@ app.include_router(tasks_router)
 app.include_router(schedule_router)
 app.include_router(config_router)
 app.include_router(stats_router)
+app.include_router(browser_router)
 
 
 @app.get("/", response_class=HTMLResponse)

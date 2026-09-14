@@ -1,4 +1,5 @@
 """自动化测试执行引擎 — 真实执行，不只是生成文案"""
+import json
 import time
 import httpx
 import asyncio
@@ -289,3 +290,110 @@ class Notifier:
                 logger.info(f"通知已发送: {title}")
         except Exception as e:
             logger.opt(exception=True).error(f"通知发送失败: {e}")
+
+
+# ── 浏览器测试执行 ──────────────────────────────────────────
+
+async def run_browser_test(task_id: int, data: dict) -> dict:
+    """执行浏览器自动化测试"""
+    from app.browser_executor import get_browser_executor, close_browser_executor
+    executor = get_browser_executor()
+
+    url = data.get("url", "")
+    cases_raw = data.get("cases_json", "[]")
+    viewport_str = data.get("viewport", "1920x1080")
+    wait_for = data.get("wait_for")
+
+    # 解析视口
+    viewport = None
+    if viewport_str:
+        parts = viewport_str.split("x")
+        if len(parts) == 2:
+            try:
+                viewport = {"width": int(parts[0]), "height": int(parts[1])}
+            except ValueError:
+                pass
+
+    # 解析测试用例
+    try:
+        cases = json.loads(cases_raw) if cases_raw else []
+    except json.JSONDecodeError:
+        cases = []
+
+    if not cases:
+        return {"note": "未提供测试用例，跳过浏览器测试"}
+
+    return await executor.execute_task(task_id, url, cases, viewport)
+
+
+async def run_ai_browser_test(task_id: int, data: dict) -> dict:
+    """AI 生成用例 + 浏览器执行"""
+    from app.browser_executor import get_browser_executor, close_browser_executor
+    from app.ai import call_ai
+
+    url = data.get("url", "")
+    feature = data.get("feature", "")
+    priority = data.get("priority", "P1")
+
+    if not url or not feature:
+        return {"note": "缺少 url 或 feature，跳过测试"}
+
+    # 步骤1: AI 生成测试用例
+    ai_result = await call_ai("generate_cases", {
+        "requirement": f"在 {url} 上测试 {feature} 功能",
+        "priority": priority,
+        "module": "Web UI"
+    })
+
+    # 步骤2: 解析 AI 输出，转换为 Playwright 步骤
+    cases = _parse_ai_output_to_cases(ai_result.get("output", ""), feature)
+
+    # 步骤3: 浏览器执行
+    executor = get_browser_executor()
+    viewport = {"width": 1920, "height": 1080}
+    return await executor.execute_task(task_id, url, cases, viewport)
+
+
+def _parse_ai_output_to_cases(ai_output: str, feature: str) -> list[dict]:
+    """将 AI 输出的测试用例转换为 Playwright 步骤"""
+    cases = []
+    lines = ai_output.split("\n")
+    current_case = None
+
+    for line in lines:
+        line = line.strip()
+        # 检测用例编号
+        import re
+        tc_match = re.match(r'(TC[-_\s]*\w+[\s-]*\d+|[Tt][Cc][-_\s]*\d+)', line)
+        if tc_match:
+            if current_case:
+                cases.append(current_case)
+            current_case = {"id": tc_match.group(1).replace("-", "").replace("_", ""),
+                           "name": line.split("|")[-1].strip() if "|" in line else line,
+                           "steps": []}
+            continue
+
+        # 检测步骤
+        if current_case and ("步骤" in line or "操作" in line or line.startswith(("1.", "2.", "3."))):
+            step_text = re.sub(r'^\d+\.\s*', '', line)
+            current_case["steps"].append({
+                "action": "click" if "点击" in step_text else "fill" if "输入" in step_text else "navigate",
+                "target": "body",
+                "value": step_text[:100]
+            })
+
+    if current_case:
+        cases.append(current_case)
+
+    # 如果没有解析出用例，创建一个默认的
+    if not cases:
+        cases = [{
+            "id": "TC-001",
+            "name": f"{feature} - 默认测试",
+            "steps": [
+                {"action": "navigate", "target": "", "value": ""},
+                {"action": "screenshot", "target": "", "value": ""}
+            ]
+        }]
+
+    return cases

@@ -141,6 +141,10 @@ async def _run_auto_execution(entry_type: str, data: dict, task_id: int, session
         result = await _run_sql_exec(data, task_id, session)
     elif etype == "kibana_search":
         result = await _run_kibana_search(data)
+    elif etype == "browser_test":
+        result = await _run_browser_tests(data, task_id)
+    elif etype == "ai_browser_test":
+        result = await _run_ai_browser_tests(data, task_id)
 
     return result
 
@@ -335,3 +339,22 @@ async def list_pipelines(session=Depends(get_db), limit: int = 20):
 @router.get("/templates")
 async def get_pipeline_templates():
     return {"templates": PIPELINE_TEMPLATES}
+
+async def _run_browser_tests(data: dict, task_id: int) -> dict:
+    """执行浏览器自动化测试"""
+    try:
+        from app.executor import run_browser_test
+        return await run_browser_test(task_id, data)
+    except Exception as e:
+        logger.opt(exception=True).error(f"浏览器测试执行失败: {e}")
+        return {"error": str(e)}
+
+
+async def _run_ai_browser_tests(data: dict, task_id: int) -> dict:
+    """AI 生成用例 + 浏览器执行"""
+    try:
+        from app.executor import run_ai_browser_test
+        return await run_ai_browser_test(task_id, data)
+    except Exception as e:
+        logger.opt(exception=True).error(f"AI浏览器测试执行失败: {e}")
+        return {"error": str(e)}

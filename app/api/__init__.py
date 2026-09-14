@@ -10,4 +10,3 @@ from .stats import router as stats_router
 from .browser import router as browser_router
 
 from .entries import router as entries_router
-from .screenshots import router as screenshots_router

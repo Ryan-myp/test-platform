@@ -128,7 +128,7 @@ async def create_task(task: TaskInput, session=Depends(get_db)):
 
 async def _run_auto_execution(entry_type: str, data: dict, task_id: int, session) -> dict:
     """根据入口类型执行相应的自动化测试"""
-    executor = ENTRY_DEFS.get(entry_type, {}).get("auto_exec")
+    executor = ENTRY_DEFS.get(entry_type, {}).get("auto_execute")
     if not executor:
         return {}
 
@@ -293,7 +293,7 @@ async def _exec_pipeline_step(step: dict, pipeline_id: int, session) -> dict:
 
     # 可能的自动化执行
     auto_result = {}
-    if ENTRY_DEFS.get(entry_type, {}).get("auto_exec"):
+    if ENTRY_DEFS.get(entry_type, {}).get("auto_execute"):
         auto_result = await _run_auto_execution(entry_type, input_data, task_id, session)
 
     return {

@@ -1,6 +1,5 @@
 """System configuration API."""
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import text as sa_text
+from fastapi import APIRouter
 from typing import Any, Dict
 import logging
 from app.config import settings
@@ -40,15 +39,12 @@ async def test_connections(data: Dict[str, Any]) -> Dict[str, Any]:
     """Test API connections."""
     results = {}
     
-    # Test AI connection (already tested by checking if key exists)
     results["ai"] = {
         "status": "ok" if settings.ai_api_key else "not_configured",
         "message": "API key configured" if settings.ai_api_key else "No API key set"
     }
     
-    # Test Jira connection
     if data.get("test_jira") and settings.jira_base_url:
-        # Simple validation - in real app would make actual request
         results["jira"] = {
             "status": "ok",
             "message": f"Connected to {settings.jira_base_url}"

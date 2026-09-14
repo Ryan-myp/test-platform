@@ -1,5 +1,5 @@
 """Statistics and dashboard API."""
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from sqlalchemy import text as sa_text
 from typing import Any, Dict, List
 import logging
@@ -9,7 +9,7 @@ router = APIRouter(prefix="/api/stats", tags=["统计"])
 
 
 @router.get("/dashboard")
-async def dashboard_stats(session=Depends(lambda: None)) -> Dict[str, Any]:
+async def dashboard_stats() -> Dict[str, Any]:
     """Get dashboard statistics."""
     from app.database import AsyncSessionLocal
     

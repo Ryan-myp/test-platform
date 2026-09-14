@@ -116,8 +116,8 @@ async def init_db():
             error_message TEXT NOT NULL DEFAULT '',
             screenshots TEXT NOT NULL DEFAULT '[]',
             logs TEXT NOT NULL DEFAULT '',
-            started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            completed_at TIMESTAMP
+            started_at TEXT NOT NULL DEFAULT (datetime('now','utc')),
+            completed_at TEXT
         )""",
         
         "test_step_results": """CREATE TABLE IF NOT EXISTS test_step_results (

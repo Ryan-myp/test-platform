@@ -211,13 +211,21 @@ class TestRunner:
             # Save execution record
             await session.execute(sa_text("""
                 INSERT INTO test_results 
-                (suite_id, execution_id, status, duration_ms, created_at)
-                VALUES (:suite_id, :execution_id, :status, :duration_ms, CURRENT_TIMESTAMP)
+                (suite_id, case_id, execution_id, status, duration_ms, actual_result, expected_result, 
+                 error_message, started_at, completed_at)
+                VALUES (:suite_id, :case_id, :execution_id, :status, :duration_ms, :actual_result, :expected_result,
+                        :error_message, :started_at, :completed_at)
             """), {
                 "suite_id": suite_id,
+                "case_id": None,
                 "execution_id": execution_id,
                 "status": "completed",
-                "duration_ms": sum(r.get("duration_ms", 0) for r in results)
+                "duration_ms": sum(r.get("duration_ms", 0) for r in results),
+                "actual_result": "{}",
+                "expected_result": "",
+                "error_message": "",
+                "started_at": "",
+                "completed_at": ""
             })
             await session.commit()
             

@@ -8,3 +8,6 @@ from .schedule import router as schedule_router
 from .config import router as config_router
 from .stats import router as stats_router
 from .browser import router as browser_router
+
+from .entries import router as entries_router
+from .screenshots import router as screenshots_router

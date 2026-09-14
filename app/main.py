@@ -8,8 +8,9 @@ import sys
 
 from app.config import settings
 from app.database import init_db, seed_prompts, AsyncSessionLocal
-from app.api import knowledge_router, tasks_router, schedule_router, config_router, stats_router, browser_router
+from app.api import knowledge_router, tasks_router, schedule_router, config_router, stats_router, browser_router, entries_router
 from app.api import test_cases as test_cases_router
+from app.api import screenshots as screenshots_router
 from app.api import test_suites as test_suites_router
 from app.api import executions as executions_router
 from app.api import bugs as bugs_router
@@ -53,6 +54,8 @@ app.include_router(schedule_router)
 app.include_router(config_router)
 app.include_router(stats_router)
 app.include_router(browser_router)
+app.include_router(entries_router)
+app.include_router(screenshots_router)
 app.include_router(test_cases_router.router)
 app.include_router(test_suites_router.router)
 app.include_router(executions_router.router)

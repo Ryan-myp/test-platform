@@ -128,6 +128,45 @@ async def list_pipelines(session=Depends(get_db)) -> Dict[str, Any]:
         return {"data": [], "total": 0}
 
 
+
+
+@router.post("/pipeline/{key}")
+async def run_pipeline(key: str, session=Depends(get_db)) -> Dict[str, Any]:
+    """Run a pipeline template."""
+    # Get templates
+    templates = {
+        "generate_cases": {"name": "生成测试用例", "desc": "根据需求描述自动生成测试用例"},
+        "analyze_bug": {"name": "分析Bug根因", "desc": "分析缺陷描述，定位根因并给出修复建议"}
+    }
+    
+    if key not in templates:
+        raise HTTPException(status_code=404, detail=f"Template '{key}' not found")
+    
+    template = templates[key]
+    
+    # Create a task execution record
+    now = datetime.now().isoformat()
+    await session.execute(sa_text(
+        "INSERT INTO task_executions (entry_type, title, status, input_data, ai_output, created_at) "
+        "VALUES (:entry_type, :title, :status, :input_data, :ai_output, :created_at)"
+    ), {
+        "entry_type": "pipeline",
+        "title": f"流水线: {template['name']}",
+        "status": "running",
+        "input_data": f'{{"key": "{key}"}}',
+        "ai_output": f"流水线已启动: {template['name']}",
+        "created_at": now
+    })
+    await session.commit()
+    
+    return {
+        "pipeline_id": f"pipeline_{key}_{int(datetime.now().timestamp())}",
+        "name": template["name"],
+        "desc": template["desc"],
+        "status": "started"
+    }
+
+
 @router.get("/{task_id}")
 async def get_task(task_id: int, session=Depends(get_db)):
     """Get a specific task execution."""

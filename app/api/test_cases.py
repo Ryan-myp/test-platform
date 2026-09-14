@@ -258,40 +258,50 @@ async def delete_case(case_id: int, session=Depends(get_db)):
 @router.post("/{case_id}/execute")
 async def execute_case(case_id: int, session=Depends(get_db)):
     """Execute a test case."""
-    r = await session.execute(sa_text("SELECT * FROM test_cases WHERE id = :id"), {"id": case_id})
-    case_row = r.fetchone()
-    if not case_row:
-        raise HTTPException(status_code=404, detail="Case not found")
-    
-    case_data = {
-        "id": case_row[0],
-        "name": case_row[1],
-        "case_type": case_row[4] or "api",
-        "automation_type": case_row[5] or "",
-        "api_config": json.loads(case_row[11] or "{}"),
-        "sql_config": json.loads(case_row[12] or "{}"),
-        "browser_config": json.loads(case_row[13] or "{}")
-    }
-    
-    # Execute based on type
-    from app.engine import TestRunner
-    runner = TestRunner()
-    result = await runner.execute_case(case_data)
-    
-    # Save result
-    await session.execute(sa_text("""
-        INSERT INTO test_results 
-        (suite_id, case_id, execution_id, status, duration_ms, actual_result, expected_result, created_at)
-        VALUES (:suite_id, :case_id, :execution_id, :status, :duration_ms, :actual_result, :expected_result, CURRENT_TIMESTAMP)
-    """), {
-        "suite_id": case_row[18],
-        "case_id": case_id,
-        "execution_id": result.get("execution_id", ""),
-        "status": result.get("status", "failed"),
-        "duration_ms": result.get("duration_ms", 0),
-        "actual_result": json.dumps(result.get("actual_result", {}), ensure_ascii=False),
-        "expected_result": case_row[10] or ""
-    })
-    await session.commit()
-    
-    return result
+    try:
+        r = await session.execute(sa_text("SELECT * FROM test_cases WHERE id = :id"), {"id": case_id})
+        case_row = r.fetchone()
+        if not case_row:
+            raise HTTPException(status_code=404, detail="Case not found")
+        
+        case_data = {
+            "id": case_row[0],
+            "name": case_row[1],
+            "case_type": case_row[4] or "api",
+            "automation_type": case_row[5] or "",
+            "api_config": json.loads(case_row[11] or "{}"),
+            "sql_config": json.loads(case_row[12] or "{}"),
+            "browser_config": json.loads(case_row[13] or "{}"),
+            "expected": case_row[10] or ""
+        }
+        
+        # Execute based on type
+        from app.engine import TestRunner
+        runner = TestRunner()
+        result = await runner.execute_case(case_data)
+        
+        # Save result
+        await session.execute(sa_text("""
+            INSERT INTO test_results 
+            (suite_id, case_id, execution_id, status, duration_ms, actual_result, expected_result, 
+             error_message, started_at, completed_at)
+            VALUES (:suite_id, :case_id, :execution_id, :status, :duration_ms, :actual_result, :expected_result,
+                    :error_message, :started_at, :completed_at)
+        """), {
+            "suite_id": case_row[18],
+            "case_id": case_id,
+            "execution_id": result.get("execution_id", ""),
+            "status": result.get("status", "failed"),
+            "duration_ms": result.get("duration_ms", 0),
+            "actual_result": json.dumps(result.get("actual_result", {}), ensure_ascii=False),
+            "expected_result": case_row[10] or "",
+            "error_message": result.get("error", ""),
+            "started_at": result.get("started_at", ""),
+            "completed_at": result.get("completed_at", "")
+        })
+        await session.commit()
+        
+        return result
+    except Exception as e:
+        logger.error(f"Execute case failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

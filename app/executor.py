@@ -346,7 +346,7 @@ async def run_ai_browser_test(task_id: int, data: dict) -> dict:
     })
 
     # 步骤2: 解析 AI 输出，转换为 Playwright 步骤
-    cases = _parse_ai_output_to_cases(ai_result.get("output", ""), feature)
+    cases = _parse_ai_output_to_cases(ai_result.get("output", ""), feature, url)
 
     # 步骤3: 浏览器执行
     executor = get_browser_executor()
@@ -354,7 +354,7 @@ async def run_ai_browser_test(task_id: int, data: dict) -> dict:
     return await executor.execute_task(task_id, url, cases, viewport)
 
 
-def _parse_ai_output_to_cases(ai_output: str, feature: str) -> list[dict]:
+def _parse_ai_output_to_cases(ai_output: str, feature: str, base_url: str = "") -> list[dict]:
     """将 AI 输出的测试用例转换为 Playwright 步骤"""
     cases = []
     lines = ai_output.split("\n")

@@ -99,6 +99,31 @@ async def list_tasks(
         return {"items": [], "total": 0, "limit": limit, "offset": offset, "pages": 0}
 
 
+
+@router.get("/pipeline")
+async def list_pipelines(session=Depends(get_db)) -> Dict[str, Any]:
+    """List pipeline executions."""
+    try:
+        r = await session.execute(sa_text("SELECT * FROM task_executions WHERE entry_type = 'pipeline' ORDER BY id DESC LIMIT 20"))
+        rows = r.fetchall()
+        
+        pipelines = []
+        for row in rows:
+            pipelines.append({
+                "id": row[0],
+                "name": row[2] or "",
+                "steps": row[4] or "[]",
+                "status": row[6] or "pending",
+                "current_step": 0,
+                "created_at": row[8]
+            })
+        
+        return {"data": pipelines, "total": len(pipelines)}
+    except Exception as e:
+        logger.error(f"Failed to list pipelines: {e}")
+        return {"data": [], "total": 0}
+
+
 @router.get("/{task_id}")
 async def get_task(task_id: int, session=Depends(get_db)):
     """Get a specific task execution."""

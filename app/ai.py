@@ -1,4 +1,5 @@
 """AI 层：Prompt 模板 + 知识检索 + LLM 调用"""
+import re
 import json
 import openai
 from datetime import datetime, timezone
@@ -55,7 +56,10 @@ async def call_ai(entry_type: str, input_data: dict) -> dict:
     if context:
         template += f"\n\n【相关历史经验】\n{context}"
 
-    prompt = template.format(**input_data)
+    # 自动提取模板占位符并为缺失的提供空字符串默认值
+    placeholders = set(re.findall(r'\{(\w+)\}', template))
+    filled_data = {k: input_data.get(k, '') for k in placeholders}
+    prompt = template.format(**filled_data)
 
     result = {
         "input_data": input_data,

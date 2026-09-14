@@ -128,6 +128,9 @@ class TestRunner:
         try:
             if case_type == "api":
                 api_config = case_data.get("api_config", {})
+                if isinstance(api_config, str):
+                    import json
+                    api_config = json.loads(api_config)
                 result = await self.api_executor.execute(api_config)
             elif case_type == "sql":
                 sql_config = case_data.get("sql_config", {})

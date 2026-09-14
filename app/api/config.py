@@ -23,13 +23,12 @@ async def get_config() -> Dict[str, Any]:
         },
         "jira": {
             "url": settings.jira_base_url,
-            "project": settings.jira_project if hasattr(settings, "jira_project") else "",
+            "project": getattr(settings, "jira_project", ""),
             "connected": bool(settings.jira_base_url)
         },
         "app": {
             "name": settings.app_name,
-            "version": settings.version,
-            "debug": settings.debug
+            "version": settings.version
         }
     }
 

@@ -45,7 +45,7 @@ async def list_tasks(
         
         # Get tasks
         sql = f"""SELECT id, entry_type, title, input_data, ai_output, 
-                  auto_exec_result, status, error, duration_ms, 
+                  status, error, duration_ms, 
                   created_at, completed_at
                   FROM task_executions {where}
                   ORDER BY id DESC LIMIT :limit OFFSET :offset"""
@@ -61,12 +61,12 @@ async def list_tasks(
                 "title": row[2] or "",
                 "input_data": json.loads(row[3] or "{}"),
                 "ai_output": row[4] or "",
-                "auto_exec_result": json.loads(row[5] or "{}") if row[5] else {},
-                "status": row[6] or "pending",
-                "error": row[7] or "",
-                "duration_ms": row[8] or 0,
-                "created_at": row[9],
-                "completed_at": row[10]
+                "auto_exec_result": {},
+                "status": row[5] or "pending",
+                "error": row[6] or "",
+                "duration_ms": row[7] or 0,
+                "created_at": row[8],
+                "completed_at": row[9]
             })
         
         return {
@@ -100,12 +100,12 @@ async def get_task(task_id: int, session=Depends(get_db)):
             "title": row[2] or "",
             "input_data": json.loads(row[3] or "{}"),
             "ai_output": row[4] or "",
-            "auto_exec_result": json.loads(row[5] or "{}") if row[5] else {},
-            "status": row[6] or "pending",
-            "error": row[7] or "",
-            "duration_ms": row[8] or 0,
-            "created_at": row[9],
-            "completed_at": row[10]
+            "auto_exec_result": {},
+            "status": row[5] or "pending",
+            "error": row[6] or "",
+            "duration_ms": row[7] or 0,
+            "created_at": row[8],
+            "completed_at": row[9]
         }
     except HTTPException:
         raise

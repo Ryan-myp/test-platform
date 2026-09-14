@@ -1,5 +1,5 @@
 """Schedule management API."""
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text as sa_text
 from typing import Any, Dict, List, Optional
 import json
@@ -7,6 +7,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/schedules", tags=["定时任务"])
+
+
+async def get_db():
+    from app.database import AsyncSessionLocal
+    async with AsyncSessionLocal() as session:
+        yield session
+
 
 
 async def get_db():
@@ -57,80 +64,7 @@ async def create_schedule(data: Dict[str, Any], session=Depends(get_db)):
             "enabled": data.get("enabled", True)
         })
         await session.commit()
-        schedule_id = r.lastrowid
-        
-        return {"id": schedule_id, "message": "Schedule created"}
+        return {"id": r.lastrowid, "message": "Schedule created"}
     except Exception as e:
         logger.error(f"Failed to create schedule: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.put("/{schedule_id}")
-async def update_schedule(schedule_id: int, data: Dict[str, Any], session=Depends(get_db)):
-    """Update a schedule."""
-    try:
-        r = await session.execute(sa_text("SELECT id FROM schedules WHERE id = :id"), {"id": schedule_id})
-        if not r.fetchone():
-            raise HTTPException(status_code=404, detail="Schedule not found")
-        
-        await session.execute(sa_text("""
-            UPDATE schedules 
-            SET name=:name, entry_type=:entry_type, cron=:cron, params=:params, enabled=:enabled
-            WHERE id = :id
-        """), {
-            "id": schedule_id,
-            "name": data.get("name", ""),
-            "entry_type": data.get("entry_type", "generate_cases"),
-            "cron": data.get("cron", "0 */6 * * *"),
-            "params": json.dumps(data.get("params", {}), ensure_ascii=False),
-            "enabled": data.get("enabled", True)
-        })
-        await session.commit()
-        
-        return {"message": "Schedule updated"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to update schedule: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.delete("/{schedule_id}")
-async def delete_schedule(schedule_id: int, session=Depends(get_db)):
-    """Delete a schedule."""
-    try:
-        r = await session.execute(sa_text("SELECT id FROM schedules WHERE id = :id"), {"id": schedule_id})
-        if not r.fetchone():
-            raise HTTPException(status_code=404, detail="Schedule not found")
-        
-        await session.execute(sa_text("DELETE FROM schedules WHERE id = :id"), {"id": schedule_id})
-        await session.commit()
-        
-        return {"message": "Schedule deleted"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to delete schedule: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/{schedule_id}/toggle")
-async def toggle_schedule(schedule_id: int, session=Depends(get_db)):
-    """Toggle schedule enabled status."""
-    try:
-        r = await session.execute(sa_text("SELECT enabled FROM schedules WHERE id = :id"), {"id": schedule_id})
-        row = r.fetchone()
-        if not row:
-            raise HTTPException(status_code=404, detail="Schedule not found")
-        
-        new_status = not bool(row[0])
-        await session.execute(sa_text("UPDATE schedules SET enabled = :status WHERE id = :id"), 
-                            {"status": new_status, "id": schedule_id})
-        await session.commit()
-        
-        return {"enabled": new_status}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to toggle schedule: {e}")
         raise HTTPException(status_code=500, detail=str(e))

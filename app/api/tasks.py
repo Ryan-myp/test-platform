@@ -23,10 +23,14 @@ async def get_templates() -> Dict[str, Any]:
     return {
         "templates": {
             "generate_cases": {
+                "name": "生成测试用例",
+                "desc": "根据需求描述自动生成测试用例",
                 "prompt": "请为以下需求生成测试用例：\\n\\n{requirement}",
                 "fields": ["requirement", "module"]
             },
             "analyze_bug": {
+                "name": "分析Bug根因",
+                "desc": "分析缺陷描述，定位根因并给出修复建议",
                 "prompt": "请分析以下 Bug 并定位根因：\\n\\n{description}",
                 "fields": ["description", "reproduction_steps"]
             }

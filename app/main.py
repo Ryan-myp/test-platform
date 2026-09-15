@@ -7,7 +7,7 @@ from loguru import logger
 import sys
 
 from app.config import settings
-from app.database import init_db, seed_prompts, AsyncSessionLocal
+from app.database import init_db, seed_prompts, seed_admin_user, AsyncSessionLocal
 
 # 导入所有路由
 from app.api.test_cases import router as test_cases_router
@@ -26,6 +26,7 @@ from app.api.test_data import router as test_data_router
 from app.api.webhooks import router as webhooks_router
 from app.api.entries import router as entries_router
 from app.api.ci_cd import router as ci_cd_router
+from app.api.auth import router as auth_router
 
 
 @asynccontextmanager
@@ -33,8 +34,8 @@ async def lifespan(app: FastAPI):
     """应用生命周期管理"""
     logger.info(f"🚀 Starting {settings.app_name} v{settings.version}")
     await init_db()
-    async with AsyncSessionLocal() as session:
-        await seed_prompts()
+    await seed_prompts()
+    await seed_admin_user()
     logger.info("✅ Database initialized")
     logger.info(f"🤖 AI Model: {settings.ai_model} | API Key: {'✅' if settings.ai_api_key else '❌'}")
     logger.info(f"📊 Kibana: {'✅' if settings.kibana_base_url else '❌'} | Jira: {'✅' if settings.jira_base_url else '❌'}")
@@ -74,6 +75,7 @@ app.include_router(test_data_router)
 app.include_router(webhooks_router)
 app.include_router(entries_router)
 app.include_router(ci_cd_router)
+app.include_router(auth_router)
 
 
 @app.get("/", response_class=HTMLResponse)

@@ -1,0 +1,40 @@
+version: '3.8'
+services:
+  testpilot:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - AI_API_KEY=${AI_API_KEY}
+      - AI_BASE_URL=${AI_BASE_URL:-https://api.openai.com/v1}
+      - AI_MODEL=${AI_MODEL:-gpt-4o}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-testpilot-secret}
+      - DATABASE_URL=sqlite+aiosqlite:////data/testpilot.db
+    volumes:
+      - ./data:/data
+      - ./screenshots:/app/screenshots
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - testpilot-net
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - testpilot-net
+
+volumes:
+  redis_data:
+
+networks:
+  testpilot-net:
+    driver: bridge

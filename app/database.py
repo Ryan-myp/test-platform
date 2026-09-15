@@ -217,6 +217,18 @@ async def init_db():
             results TEXT NOT NULL DEFAULT '[]',
             screenshot_dir TEXT NOT NULL DEFAULT '',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )""",
+        
+        "users": """CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username VARCHAR(50) UNIQUE NOT NULL,
+            password_hash VARCHAR(255) NOT NULL,
+            email VARCHAR(255),
+            role VARCHAR(20) DEFAULT 'member',
+            is_active INTEGER DEFAULT 1,
+            last_login TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
         )"""
     }
     
@@ -256,3 +268,17 @@ async def seed_prompts():
 
 # 导出数据库会话工厂
 db_factory = AsyncSessionLocal
+
+
+async def seed_admin_user():
+    """Create default admin user"""
+    from app.auth.security import hash_password
+    async with AsyncSessionLocal() as session:
+        r = await session.execute(sa_text("SELECT id FROM users WHERE username = 'admin'"))
+        if not r.fetchone():
+            await session.execute(sa_text("""
+                INSERT INTO users (username, password_hash, email, role)
+                VALUES ('admin', :password_hash, 'admin@testpilot.com', 'admin')
+            """), {"password_hash": hash_password("admin123")})
+            await session.commit()
+            logger.info(" ✅ Default admin user created (admin/admin123)")

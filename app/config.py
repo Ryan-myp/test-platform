@@ -33,6 +33,10 @@ class Settings(BaseSettings):
 
     # 通知
     webhook_url: str = ""  # 企业微信 / Slack webhook
+    
+    # 认证
+    jwt_secret_key: str = "testpilot-secret-key-change-in-production"
+    jwt_algorithm: str = "HS256"
 
     class Config:
         env_file = ".env"

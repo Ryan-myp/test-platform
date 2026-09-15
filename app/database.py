@@ -173,6 +173,7 @@ async def init_db():
             title TEXT NOT NULL,
             input_data TEXT NOT NULL DEFAULT '{}',
             ai_output TEXT NOT NULL DEFAULT '',
+            steps TEXT NOT NULL DEFAULT '[]',
             status TEXT NOT NULL DEFAULT 'running',
             error TEXT NOT NULL DEFAULT '',
             duration_ms REAL NOT NULL DEFAULT 0,

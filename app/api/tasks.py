@@ -17,6 +17,50 @@ async def get_db():
 
 
 
+@router.post("")
+async def create_task(data: Dict[str, Any], session=Depends(get_db)) -> Dict[str, Any]:
+    """Create a new task."""
+    try:
+        entry_type = data.get("entry_type", "manual")
+        title = data.get("title", "未命名任务")
+        input_data = data.get("input_data", {})
+        
+        now = datetime.now().isoformat()
+        
+        # 调用 AI 生成输出
+        from app.ai import call_ai
+        ai_result = await call_ai(entry_type, input_data)
+        
+        # 保存任务
+        await session.execute(sa_text(
+            "INSERT INTO task_executions (entry_type, title, status, input_data, ai_output, created_at) "
+            "VALUES (:entry_type, :title, :status, :input_data, :ai_output, :created_at)"
+        ), {
+            "entry_type": entry_type,
+            "title": title,
+            "status": ai_result.get("status", "success"),
+            "input_data": json.dumps(input_data, ensure_ascii=False),
+            "ai_output": ai_result.get("output", ""),
+            "created_at": now
+        })
+        await session.commit()
+        
+        # 获取 ID
+        r = await session.execute(sa_text("SELECT last_insert_rowid()"))
+        task_id = r.scalar()
+        
+        return {
+            "id": task_id,
+            "entry_type": entry_type,
+            "title": title,
+            "status": ai_result.get("status", "success"),
+            "output": ai_result.get("output", "")
+        }
+    except Exception as e:
+        logger.error(f"Failed to create task: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/templates")
 async def get_templates() -> Dict[str, Any]:
     """Get task templates."""

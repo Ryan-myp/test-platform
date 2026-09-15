@@ -25,7 +25,7 @@ async def knowledge_stats(session=Depends(get_db)) -> Dict[str, Any]:
                 SUM(CASE WHEN type='case' THEN 1 ELSE 0 END) as cases,
                 SUM(CASE WHEN type='bug' THEN 1 ELSE 0 END) as bugs,
                 SUM(CASE WHEN type='spec' THEN 1 ELSE 0 END) as specs
-            FROM knowledge_items
+            FROM knowledge
         """))
         row = r.fetchone()
         
@@ -50,7 +50,7 @@ async def list_knowledge(
     try:
         where = "WHERE type = :type" if type_filter else ""
         r = await session.execute(sa_text(f"""
-            SELECT * FROM knowledge_items {where}
+            SELECT * FROM knowledge {where}
             ORDER BY created_at DESC LIMIT :limit
         """), {"type": type_filter, "limit": limit})
         rows = r.fetchall()
@@ -77,7 +77,7 @@ async def create_knowledge(data: Dict[str, Any], session=Depends(get_db)):
     """Create knowledge item."""
     try:
         r = await session.execute(sa_text("""
-            INSERT INTO knowledge_items (type, title, content, tags)
+            INSERT INTO knowledge (type, title, content, tags)
             VALUES (:type, :title, :content, :tags)
         """), {
             "type": data.get("type", "case"),
@@ -97,7 +97,7 @@ async def create_knowledge(data: Dict[str, Any], session=Depends(get_db)):
 async def get_knowledge(item_id: int, session=Depends(get_db)):
     """Get knowledge item."""
     try:
-        r = await session.execute(sa_text("SELECT * FROM knowledge_items WHERE id = :id"), {"id": item_id})
+        r = await session.execute(sa_text("SELECT * FROM knowledge WHERE id = :id"), {"id": item_id})
         row = r.fetchone()
         
         if not row:
@@ -122,12 +122,12 @@ async def get_knowledge(item_id: int, session=Depends(get_db)):
 async def update_knowledge(item_id: int, data: Dict[str, Any], session=Depends(get_db)):
     """Update knowledge item."""
     try:
-        r = await session.execute(sa_text("SELECT id FROM knowledge_items WHERE id = :id"), {"id": item_id})
+        r = await session.execute(sa_text("SELECT id FROM knowledge WHERE id = :id"), {"id": item_id})
         if not r.fetchone():
             raise HTTPException(status_code=404, detail="Knowledge not found")
         
         await session.execute(sa_text("""
-            UPDATE knowledge_items 
+            UPDATE knowledge 
             SET title=:title, content=:content, tags=:tags, type=:type
             WHERE id = :id
         """), {
@@ -151,11 +151,11 @@ async def update_knowledge(item_id: int, data: Dict[str, Any], session=Depends(g
 async def delete_knowledge(item_id: int, session=Depends(get_db)):
     """Delete knowledge item."""
     try:
-        r = await session.execute(sa_text("SELECT id FROM knowledge_items WHERE id = :id"), {"id": item_id})
+        r = await session.execute(sa_text("SELECT id FROM knowledge WHERE id = :id"), {"id": item_id})
         if not r.fetchone():
             raise HTTPException(status_code=404, detail="Knowledge not found")
         
-        await session.execute(sa_text("DELETE FROM knowledge_items WHERE id = :id"), {"id": item_id})
+        await session.execute(sa_text("DELETE FROM knowledge WHERE id = :id"), {"id": item_id})
         await session.commit()
         
         return {"message": "Knowledge deleted"}

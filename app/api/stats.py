@@ -51,8 +51,7 @@ async def dashboard_stats() -> Dict[str, Any]:
                     SUM(CASE WHEN status='failed' THEN 1 ELSE 0 END) as failed,
                     SUM(CASE WHEN status='error' THEN 1 ELSE 0 END) as error_count,
                     AVG(duration_ms) as avg_duration
-                FROM test_executions
-                WHERE started_at >= datetime('now', '-7 days')
+                FROM task_executions
             """))
             executions = r.fetchone()
             

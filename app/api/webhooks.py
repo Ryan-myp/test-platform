@@ -19,7 +19,7 @@ async def get_db():
 async def list_webhooks(session=Depends(get_db)) -> Dict[str, Any]:
     """List webhooks."""
     try:
-        r = await session.execute(sa_text("SELECT * FROM configs WHERE category = 'webhook' ORDER BY id"))
+        r = await session.execute(sa_text("SELECT rowid, * FROM configs WHERE category = 'webhook' ORDER BY rowid"))
         rows = r.fetchall()
         
         webhooks = []
@@ -29,7 +29,8 @@ async def list_webhooks(session=Depends(get_db)) -> Dict[str, Any]:
             except:
                 config = {}
             webhooks.append({
-                "id": row[0],
+                "id": row[1],
+                "key": row[2],
                 "name": config.get("name", ""),
                 "url": config.get("url", ""),
                 "events": config.get("events", []),

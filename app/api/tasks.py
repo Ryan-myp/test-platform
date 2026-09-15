@@ -146,15 +146,19 @@ async def run_pipeline(key: str, session=Depends(get_db)) -> Dict[str, Any]:
     
     # Create a task execution record
     now = datetime.now().isoformat()
+    import json
+    steps = json.dumps([{"name": template['name'], "desc": template['desc']}, {"name": "执行中", "desc": "准备执行"}], ensure_ascii=False)
+    
     await session.execute(sa_text(
-        "INSERT INTO task_executions (entry_type, title, status, input_data, ai_output, created_at) "
-        "VALUES (:entry_type, :title, :status, :input_data, :ai_output, :created_at)"
+        "INSERT INTO task_executions (entry_type, title, status, input_data, ai_output, steps, created_at) "
+        "VALUES (:entry_type, :title, :status, :input_data, :ai_output, :steps, :created_at)"
     ), {
         "entry_type": "pipeline",
         "title": f"流水线: {template['name']}",
         "status": "running",
         "input_data": f'{{"key": "{key}"}}',
         "ai_output": f"流水线已启动: {template['name']}",
+        "steps": steps,
         "created_at": now
     })
     await session.commit()

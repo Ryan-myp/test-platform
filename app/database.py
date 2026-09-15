@@ -276,9 +276,10 @@ async def seed_admin_user():
     async with AsyncSessionLocal() as session:
         r = await session.execute(sa_text("SELECT id FROM users WHERE username = 'admin'"))
         if not r.fetchone():
+            hashed = hash_password("admin123")
             await session.execute(sa_text("""
                 INSERT INTO users (username, password_hash, email, role)
                 VALUES ('admin', :password_hash, 'admin@testpilot.com', 'admin')
-            """), {"password_hash": hash_password("admin123")})
+            """), {"password_hash": hashed})
             await session.commit()
             logger.info(" ✅ Default admin user created (admin/admin123)")

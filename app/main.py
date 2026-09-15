@@ -27,6 +27,7 @@ from app.api.webhooks import router as webhooks_router
 from app.api.entries import router as entries_router
 from app.api.ci_cd import router as ci_cd_router
 from app.api.auth import router as auth_router
+from app.api.tasks_queue import router as tasks_queue_router
 
 
 @asynccontextmanager
@@ -76,6 +77,7 @@ app.include_router(webhooks_router)
 app.include_router(entries_router)
 app.include_router(ci_cd_router)
 app.include_router(auth_router)
+app.include_router(tasks_queue_router)
 
 
 @app.get("/", response_class=HTMLResponse)

@@ -8,17 +8,28 @@ import sys
 
 from app.config import settings
 from app.database import init_db, seed_prompts, AsyncSessionLocal
-from app.api import knowledge_router, tasks_router, schedule_router, config_router, stats_router, browser_router, entries_router
-from app.api import test_cases as test_cases_router
-from app.api import test_suites as test_suites_router
-from app.api import executions as executions_router
-from app.api import bugs as bugs_router
+
+# 导入所有路由
+from app.api.test_cases import router as test_cases_router
+from app.api.test_suites import router as test_suites_router
+from app.api.bugs import router as bugs_router
+from app.api.knowledge import router as knowledge_router
+from app.api.tasks import router as tasks_router
+from app.api.schedule import router as schedule_router
+from app.api.config import router as config_router
+from app.api.stats import router as stats_router
+from app.api.browser import router as browser_router
+from app.api.executions import router as executions_router
+from app.api.reports import router as reports_router
+from app.api.environments import router as environments_router
+from app.api.test_data import router as test_data_router
+from app.api.webhooks import router as webhooks_router
+from app.api.entries import router as entries_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
-    # Startup
     logger.info(f"🚀 Starting {settings.app_name} v{settings.version}")
     await init_db()
     async with AsyncSessionLocal() as session:
@@ -27,14 +38,13 @@ async def lifespan(app: FastAPI):
     logger.info(f"🤖 AI Model: {settings.ai_model} | API Key: {'✅' if settings.ai_api_key else '❌'}")
     logger.info(f"📊 Kibana: {'✅' if settings.kibana_base_url else '❌'} | Jira: {'✅' if settings.jira_base_url else '❌'}")
     yield
-    # Shutdown
     logger.info("🛑 Shutting down")
 
 
 app = FastAPI(
     title=settings.app_name,
     version=settings.version,
-    description="AI 测试工作台 — 知识库沉淀 + 六大入口 + 自动化执行引擎 + 多系统联动",
+    description="AI 测试工作台 — 知识库沉淀 + 多入口 + 自动化执行引擎 + 多系统联动",
     lifespan=lifespan
 )
 
@@ -46,18 +56,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 注册路由
+# 注册所有路由
+app.include_router(test_cases_router)
+app.include_router(test_suites_router)
+app.include_router(bugs_router)
 app.include_router(knowledge_router)
 app.include_router(tasks_router)
 app.include_router(schedule_router)
 app.include_router(config_router)
 app.include_router(stats_router)
 app.include_router(browser_router)
+app.include_router(executions_router)
+app.include_router(reports_router)
+app.include_router(environments_router)
+app.include_router(test_data_router)
+app.include_router(webhooks_router)
 app.include_router(entries_router)
-app.include_router(test_cases_router.router)
-app.include_router(test_suites_router.router)
-app.include_router(executions_router.router)
-app.include_router(bugs_router.router)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -73,7 +87,6 @@ async def health():
 
 if __name__ == "__main__":
     import uvicorn
-    # 配置 loguru
     logger.remove()
     logger.add(sys.stderr, level="INFO",
                format="<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | {message}")

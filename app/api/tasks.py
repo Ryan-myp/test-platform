@@ -116,10 +116,10 @@ async def list_pipelines(session=Depends(get_db)) -> Dict[str, Any]:
             pipelines.append({
                 "id": row[0],
                 "name": row[2] or "",
-                "steps": row[4] or "[]",
+                "steps": row[5] or "[]",
                 "status": row[6] or "pending",
                 "current_step": 0,
-                "created_at": row[8]
+                "created_at": row[9]
             })
         
         return {"data": pipelines, "total": len(pipelines)}

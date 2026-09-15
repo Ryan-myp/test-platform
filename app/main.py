@@ -25,6 +25,7 @@ from app.api.environments import router as environments_router
 from app.api.test_data import router as test_data_router
 from app.api.webhooks import router as webhooks_router
 from app.api.entries import router as entries_router
+from app.api.ci_cd import router as ci_cd_router
 
 
 @asynccontextmanager
@@ -72,6 +73,7 @@ app.include_router(environments_router)
 app.include_router(test_data_router)
 app.include_router(webhooks_router)
 app.include_router(entries_router)
+app.include_router(ci_cd_router)
 
 
 @app.get("/", response_class=HTMLResponse)

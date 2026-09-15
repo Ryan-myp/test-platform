@@ -181,3 +181,116 @@ async def run_execution(data: Dict[str, Any], session=Depends(get_db)):
         "failed": sum(1 for r in results if r["status"] == "failed"),
         "results": results
     }
+
+
+@router.post("/run-case")
+async def run_single_case(data: Dict[str, Any], session=Depends(get_db)):
+    """Execute a single test case."""
+    try:
+        case_id = data.get("case_id")
+        
+        # Get case
+        r = await session.execute(sa_text("SELECT * FROM test_cases WHERE id = :id"), {"id": case_id})
+        case = r.fetchone()
+        if not case:
+            raise HTTPException(status_code=404, detail="Case not found")
+        
+        # Execute using test runner
+        from app.test_runner import runner
+        result = await runner.run_case({
+            "id": case[0],
+            "name": case[1],
+            "case_type": case[4],
+            "api_config": json.loads(case[11] or "{}") if case[11] else {},
+            "steps": case[9],
+            "expected": case[10]
+        })
+        
+        # Save result
+        now = datetime.now().isoformat()
+        await session.execute(sa_text("""
+            INSERT INTO test_results (suite_id, case_id, execution_id, status, duration_ms,
+                                      actual_result, expected_result, error_message, started_at, completed_at)
+            VALUES (:suite_id, :case_id, :execution_id, :status, :duration_ms,
+                    :actual_result, :expected_result, :error_message, :started_at, :completed_at)
+        """), {
+            "suite_id": case[15],
+            "case_id": case_id,
+            "execution_id": result.get("execution_id", ""),
+            "status": result.get("status", "pending"),
+            "duration_ms": result.get("duration_ms", 0),
+            "actual_result": json.dumps(result, ensure_ascii=False),
+            "expected_result": case[10] or "",
+            "error_message": result.get("error", ""),
+            "started_at": now,
+            "completed_at": now
+        })
+        await session.commit()
+        
+        return {
+            "case_id": case_id,
+            "case_name": case[1] or "",
+            "result": result
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to run case: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/run-suite")
+async def run_suite(data: Dict[str, Any], session=Depends(get_db)):
+    """Execute a test suite."""
+    try:
+        suite_id = data.get("suite_id")
+        
+        # Get suite
+        r = await session.execute(sa_text("SELECT * FROM test_suites WHERE id = :id"), {"id": suite_id})
+        suite = r.fetchone()
+        if not suite:
+            raise HTTPException(status_code=404, detail="Suite not found")
+        
+        # Get cases
+        r = await session.execute(sa_text(
+            "SELECT id, name, case_type, api_config, steps, expected FROM test_cases WHERE suite_id = :suite_id AND status = 'active'"
+        ), {"suite_id": suite_id})
+        cases = r.fetchall()
+        
+        # Execute each case
+        from app.test_runner import runner
+        results = []
+        for case in cases:
+            result = await runner.run_case({
+                "id": case[0],
+                "name": case[1],
+                "case_type": case[2],
+                "api_config": json.loads(case[3] or "{}") if case[3] else {},
+                "steps": case[4],
+                "expected": case[5]
+            })
+            results.append(result)
+        
+        # Save results
+        passed = sum(1 for r in results if r.get("status") == "passed")
+        failed = sum(1 for r in results if r.get("status") == "failed")
+        error = sum(1 for r in results if r.get("status") == "error")
+        
+        now = datetime.now().isoformat()
+        
+        return {
+            "suite_id": suite_id,
+            "suite_name": suite[1] or "",
+            "total": len(results),
+            "passed": passed,
+            "failed": failed,
+            "error": error,
+            "pass_rate": round(passed / max(len(results), 1) * 100, 1),
+            "results": results,
+            "started_at": now
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to run suite: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

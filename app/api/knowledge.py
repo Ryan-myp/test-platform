@@ -59,11 +59,12 @@ async def list_knowledge(
         for row in rows:
             items.append({
                 "id": row[0],
-                "type": row[1] or "",
-                "title": row[2] or "",
-                "content": row[3] or "",
-                "tags": json.loads(row[4] or "[]"),
-                "created_at": row[5]
+                "title": row[1] or "",
+                "content": row[2] or "",
+                "category": row[3] or "",
+                "tags": row[4] or "",
+                "source": row[5] or "",
+                "created_at": row[8]
             })
         
         return {"items": items, "total": len(items)}
@@ -83,7 +84,7 @@ async def create_knowledge(data: Dict[str, Any], session=Depends(get_db)):
             "type": data.get("type", "case"),
             "title": data.get("title", ""),
             "content": data.get("content", ""),
-            "tags": json.dumps(data.get("tags", []), ensure_ascii=False)
+            "tags": data.get("tags", "")
         })
         await session.commit()
         
@@ -105,11 +106,12 @@ async def get_knowledge(item_id: int, session=Depends(get_db)):
         
         return {
             "id": row[0],
-            "type": row[1] or "",
-            "title": row[2] or "",
-            "content": row[3] or "",
-            "tags": json.loads(row[4] or "[]"),
-            "created_at": row[5]
+            "title": row[1] or "",
+            "content": row[2] or "",
+            "category": row[3] or "",
+            "tags": row[4] or "",
+            "source": row[5] or "",
+            "created_at": row[8]
         }
     except HTTPException:
         raise
@@ -135,7 +137,7 @@ async def update_knowledge(item_id: int, data: Dict[str, Any], session=Depends(g
             "type": data.get("type", "case"),
             "title": data.get("title", ""),
             "content": data.get("content", ""),
-            "tags": json.dumps(data.get("tags", []), ensure_ascii=False)
+            "tags": data.get("tags", "")
         })
         await session.commit()
         

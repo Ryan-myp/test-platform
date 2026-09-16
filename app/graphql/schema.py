@@ -2,10 +2,7 @@
 import strawberry
 from typing import List, Optional
 from datetime import datetime
-from app.models.test_case import TestCase
-from app.models.bug import Bug
-from app.models.test_suite import TestSuite
-from app.cache.stats import stats_cache
+from app.database import AsyncSessionLocal, sa_text
 
 
 @strawberry.type
@@ -46,6 +43,15 @@ class TestSuiteType:
 
 
 @strawberry.type
+class DashboardStats:
+    cases: dict
+    bugs: dict
+    suites: dict
+    executions: dict
+    knowledge: dict
+
+
+@strawberry.type
 class Query:
     @strawberry.field
     async def test_cases(
@@ -57,8 +63,6 @@ class Query:
         offset: int = 0
     ) -> List[TestCaseType]:
         """查询测试用例"""
-        from app.database import AsyncSessionLocal, sa_text
-        
         async with AsyncSessionLocal() as session:
             sql = "SELECT id, name, module, priority, case_type, status, owner, created_at, updated_at FROM test_cases WHERE 1=1"
             params = {}
@@ -103,8 +107,6 @@ class Query:
         limit: int = 20
     ) -> List[BugType]:
         """查询 Bug"""
-        from app.database import AsyncSessionLocal, sa_text
-        
         async with AsyncSessionLocal() as session:
             sql = "SELECT id, title, description, severity, status, module, priority, reporter, assignee, created_at FROM bugs WHERE 1=1"
             params = {}
@@ -139,16 +141,15 @@ class Query:
             ]
     
     @strawberry.field
-    async def dashboard_stats(self) -> dict:
+    async def dashboard_stats(self) -> DashboardStats:
         """获取仪表盘统计"""
         from app.api.stats import get_dashboard_stats
-        return await get_dashboard_stats()
+        stats = await get_dashboard_stats()
+        return DashboardStats(**stats)
     
     @strawberry.field
     async def test_suite(self, id: int) -> Optional[TestSuiteType]:
         """获取单个测试套件"""
-        from app.database import AsyncSessionLocal, sa_text
-        
         async with AsyncSessionLocal() as session:
             result = await session.execute(
                 sa_text("SELECT id, name, description, module, priority, status FROM test_suites WHERE id = :id"),
@@ -180,28 +181,28 @@ class Mutation:
         case_type: str = "api"
     ) -> TestCaseType:
         """创建测试用例"""
-        from app.api.test_cases import create_test_case
-        from app.database import AsyncSessionLocal
-        
         async with AsyncSessionLocal() as session:
-            result = await create_test_case(session, {
-                "name": name,
-                "module": module,
-                "priority": priority,
-                "case_type": case_type,
-                "status": "draft"
-            })
+            result = await session.execute(
+                sa_text("""
+                    INSERT INTO test_cases (name, module, priority, case_type, status, created_at, updated_at)
+                    VALUES (:name, :module, :priority, :case_type, 'draft', :now, :now)
+                    RETURNING id, name, module, priority, case_type, status, owner, created_at, updated_at
+                """),
+                {"name": name, "module": module, "priority": priority, 
+                 "case_type": case_type, "now": datetime.now()}
+            )
+            row = result.fetchone()
             
             return TestCaseType(
-                id=result["id"],
-                name=result["name"],
-                module=result.get("module", ""),
-                priority=result.get("priority", "P2"),
-                case_type=result.get("case_type", "api"),
-                status=result.get("status", "draft"),
-                owner=result.get("owner", ""),
-                created_at=datetime.now(),
-                updated_at=datetime.now()
+                id=row[0],
+                name=row[1],
+                module=row[2] or "",
+                priority=row[3] or "P2",
+                case_type=row[4] or "api",
+                status=row[5] or "draft",
+                owner=row[6] or "",
+                created_at=row[7],
+                updated_at=row[8]
             )
     
     @strawberry.mutation
@@ -211,23 +212,30 @@ class Mutation:
         status: str
     ) -> BugType:
         """更新 Bug 状态"""
-        from app.api.bugs import update_bug
-        from app.database import AsyncSessionLocal
-        
         async with AsyncSessionLocal() as session:
-            result = await update_bug(session, bug_id, {"status": status})
+            result = await session.execute(
+                sa_text("""
+                    UPDATE bugs SET status = :status, updated_at = :now WHERE id = :bug_id
+                    RETURNING id, title, description, severity, status, module, priority, reporter, assignee, created_at
+                """),
+                {"bug_id": bug_id, "status": status, "now": datetime.now()}
+            )
+            row = result.fetchone()
+            
+            if not row:
+                raise Exception(f"Bug {bug_id} not found")
             
             return BugType(
-                id=result["id"],
-                title=result["title"],
-                description=result.get("description", ""),
-                severity=result.get("severity", "medium"),
-                status=result.get("status", status),
-                module=result.get("module", ""),
-                priority=result.get("priority", "P2"),
-                reporter=result.get("reporter", ""),
-                assignee=result.get("assignee", ""),
-                created_at=result.get("created_at")
+                id=row[0],
+                title=row[1],
+                description=row[2] or "",
+                severity=row[3] or "medium",
+                status=row[4] or status,
+                module=row[5] or "",
+                priority=row[6] or "P2",
+                reporter=row[7] or "",
+                assignee=row[8] or "",
+                created_at=row[9]
             )
 
 

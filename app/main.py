@@ -44,6 +44,9 @@ async def lifespan(app: FastAPI):
     logger.info("🛑 Shutting down")
 
 
+# 注册异常处理器
+register_exceptions(app)
+
 app = FastAPI(
     title=settings.app_name,
     version=settings.version,

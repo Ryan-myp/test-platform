@@ -43,12 +43,19 @@ class TestSuiteType:
 
 
 @strawberry.type
+class StatsCount:
+    total: int
+    passed: int = 0
+    failed: int = 0
+    rate: str = ""
+
+@strawberry.type
 class DashboardStats:
-    cases: dict
-    bugs: dict
-    suites: dict
-    executions: dict
-    knowledge: dict
+    cases: StatsCount
+    bugs: StatsCount
+    suites: StatsCount
+    executions: StatsCount
+    knowledge: StatsCount
 
 
 @strawberry.type

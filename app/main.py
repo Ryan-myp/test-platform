@@ -30,6 +30,8 @@ from app.api.auth import router as auth_router
 from app.api.tasks_queue import router as tasks_queue_router
 
 
+from app.exceptions import register_exceptions
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
@@ -43,9 +45,6 @@ async def lifespan(app: FastAPI):
     yield
     logger.info("🛑 Shutting down")
 
-
-# 注册异常处理器
-register_exceptions(app)
 
 app = FastAPI(
     title=settings.app_name,
@@ -77,6 +76,13 @@ app.include_router(reports_router)
 app.include_router(environments_router)
 app.include_router(test_data_router)
 app.include_router(webhooks_router)
+app.include_router(entries_router)
+app.include_router(ci_cd_router)
+app.include_router(auth_router)
+app.include_router(tasks_queue_router)
+
+# 注册异常处理器
+register_exceptions(app)
 app.include_router(entries_router)
 app.include_router(ci_cd_router)
 app.include_router(auth_router)

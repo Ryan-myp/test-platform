@@ -236,7 +236,7 @@ async function renderPage(page) {
 
 // ── Dashboard ────────────────────────────────────────────────
 async function renderDashboard(el) {
-  const stats = await api('/stats');
+  const stats = await api('/stats/dashboard');
   const tasks = await api('/tasks?limit=10');
   el.innerHTML = `
     <div class="stats-grid">

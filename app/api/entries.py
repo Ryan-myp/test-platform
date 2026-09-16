@@ -2,7 +2,7 @@
 from fastapi import APIRouter
 from typing import Any, Dict
 
-router = APIRouter(prefix="/api", tags=["入口"])
+router = APIRouter(prefix="", tags=["入口"])
 
 
 @router.get("/entries")

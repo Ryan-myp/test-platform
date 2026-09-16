@@ -4,7 +4,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from loguru import logger
 import sys
-import asyncio
 
 from app.config import settings
 
@@ -43,33 +42,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 注册所有路由
-app.include_router(test_cases_router, prefix="/api/test_cases")
-app.include_router(test_suites_router, prefix="/api/test_suites")
-app.include_router(bugs_router, prefix="/api/bugs")
-app.include_router(knowledge_router, prefix="/api/knowledge")
-app.include_router(tasks_router, prefix="/api/tasks")
-app.include_router(schedule_router, prefix="/api/schedules")
-app.include_router(config_router, prefix="/api/config")
-app.include_router(stats_router, prefix="/api/stats")
-app.include_router(browser_router, prefix="/api/browser")
-app.include_router(executions_router, prefix="/api/executions")
-app.include_router(reports_router, prefix="/api/reports")
-app.include_router(environments_router, prefix="/api/environments")
-app.include_router(test_data_router, prefix="/api/test_data")
-app.include_router(webhooks_router, prefix="/api/webhooks")
-app.include_router(entries_router, prefix="/api/entries")
-app.include_router(ci_cd_router, prefix="/api/ci")
-app.include_router(auth_router, prefix="/api/auth")
+# 注册所有路由（路由内部已有 prefix）
+app.include_router(test_cases_router)
+app.include_router(test_suites_router)
+app.include_router(bugs_router)
+app.include_router(knowledge_router)
+app.include_router(tasks_router)
+app.include_router(schedule_router)
+app.include_router(config_router)
+app.include_router(stats_router)
+app.include_router(browser_router)
+app.include_router(executions_router)
+app.include_router(reports_router)
+app.include_router(environments_router)
+app.include_router(test_data_router)
+app.include_router(webhooks_router)
+app.include_router(entries_router)
+app.include_router(ci_cd_router)
+app.include_router(auth_router)
 
 
 @app.on_event("startup")
 async def startup():
     """启动时初始化"""
-    from app.database import init_db, seed_prompts, seed_admin_user
+    from app.database import init_db, seed_admin_user
     logger.info(f"🚀 Starting {settings.app_name} v{settings.version}")
     await init_db()
-    await seed_prompts()
     await seed_admin_user()
     logger.info("✅ Database initialized")
 

@@ -5,7 +5,7 @@ import logging
 import asyncio
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/queue", tags=["任务队列"])
+router = APIRouter(prefix="/queue", tags=["任务队列"])
 
 async def get_db():
     from app.database import AsyncSessionLocal

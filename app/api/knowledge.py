@@ -6,7 +6,7 @@ import json
 import logging
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/knowledge", tags=["知识库"])
+router = APIRouter(prefix="/knowledge", tags=["知识库"])
 
 
 async def get_db():

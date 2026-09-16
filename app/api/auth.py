@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/auth", tags=["认证"])
+router = APIRouter(prefix="/auth", tags=["认证"])
 
 async def get_db():
     from app.database import AsyncSessionLocal

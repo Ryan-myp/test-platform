@@ -7,7 +7,7 @@ import logging
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/test-data", tags=["测试数据"])
+router = APIRouter(prefix="/test-data", tags=["测试数据"])
 
 async def get_db():
     from app.database import AsyncSessionLocal

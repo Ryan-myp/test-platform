@@ -6,7 +6,7 @@ import json
 import logging
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/schedules", tags=["定时任务"])
+router = APIRouter(prefix="/schedules", tags=["定时任务"])
 
 
 async def get_db():

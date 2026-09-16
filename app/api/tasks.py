@@ -7,7 +7,7 @@ import logging
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/tasks", tags=["任务执行"])
+router = APIRouter(prefix="/tasks", tags=["任务执行"])
 
 
 async def get_db():

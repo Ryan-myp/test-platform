@@ -8,7 +8,7 @@ import os
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/browser", tags=["浏览器测试"])
+router = APIRouter(prefix="/browser", tags=["浏览器测试"])
 
 
 @router.get("/screenshots")

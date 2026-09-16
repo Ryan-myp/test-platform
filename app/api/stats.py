@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 import logging
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/stats", tags=["统计"])
+router = APIRouter(prefix="/stats", tags=["统计"])
 
 
 @router.get("/dashboard")

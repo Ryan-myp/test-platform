@@ -7,7 +7,7 @@ import logging
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/webhooks", tags=["Webhook"])
+router = APIRouter(prefix="/webhooks", tags=["Webhook"])
 
 async def get_db():
     from app.database import AsyncSessionLocal

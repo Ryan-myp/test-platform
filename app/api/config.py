@@ -5,7 +5,7 @@ import logging
 from app.config import settings
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/config", tags=["配置"])
+router = APIRouter(prefix="/config", tags=["配置"])
 
 
 @router.get("")

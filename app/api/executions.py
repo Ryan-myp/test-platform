@@ -8,7 +8,7 @@ from datetime import datetime
 import uuid
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/executions", tags=["执行记录"])
+router = APIRouter(prefix="/executions", tags=["执行记录"])
 
 
 async def get_db():

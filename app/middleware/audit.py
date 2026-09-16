@@ -51,11 +51,3 @@ class AuditMiddleware(BaseHTTPMiddleware):
         if forwarded:
             return forwarded.split(",")[0].strip()
         return request.client.host if request.client else "unknown"
-PYEOF
-cat > /tmp/testpilot-pro/app/middleware/__init__.py << 'EOF'
-from .rate_limit import RateLimitMiddleware
-from .audit import AuditMiddleware
-
-__all__ = ["RateLimitMiddleware", "AuditMiddleware"]
-EOF
-echo "✅ Created audit middleware"

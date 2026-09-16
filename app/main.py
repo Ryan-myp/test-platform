@@ -8,6 +8,12 @@ import sys
 
 from app.config import settings
 from app.database import init_db, seed_prompts, seed_admin_user, AsyncSessionLocal
+from app.exceptions import register_exceptions
+from app.middleware import RateLimitMiddleware, AuditMiddleware
+from app.cache import RedisClient, stats_cache
+from app.telemetry.instrumentation import telemetry
+from app.metrics import metrics
+from app.tenants.manager import tenant_manager
 
 # 导入所有路由
 from app.api.test_cases import router as test_cases_router
@@ -28,21 +34,38 @@ from app.api.entries import router as entries_router
 from app.api.ci_cd import router as ci_cd_router
 from app.api.auth import router as auth_router
 from app.api.tasks_queue import router as tasks_queue_router
+from app.graphql.router import router as graphql_router
 
-
-from app.exceptions import register_exceptions
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
     logger.info(f"🚀 Starting {settings.app_name} v{settings.version}")
+    
+    # 初始化数据库
     await init_db()
     await seed_prompts()
     await seed_admin_user()
     logger.info("✅ Database initialized")
+    
+    # 初始化 Redis
+    redis_client = RedisClient()
+    await redis_client.connect()
+    app.state.redis = redis_client
+    
+    # 初始化租户
+    tenant_manager.register_tenant(tenant_manager._default_tenant)
+    logger.info("🏢 Tenant manager initialized")
+    
+    # 初始化遥测
+    telemetry.record_counter("system.startup.total")
     logger.info(f"🤖 AI Model: {settings.ai_model} | API Key: {'✅' if settings.ai_api_key else '❌'}")
     logger.info(f"📊 Kibana: {'✅' if settings.kibana_base_url else '❌'} | Jira: {'✅' if settings.jira_base_url else '❌'}")
+    
     yield
+    
+    # 清理
+    await redis_client.close()
     logger.info("🛑 Shutting down")
 
 
@@ -53,6 +76,9 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# 中间件
+app.add_middleware(AuditMiddleware)
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -80,13 +106,10 @@ app.include_router(entries_router)
 app.include_router(ci_cd_router)
 app.include_router(auth_router)
 app.include_router(tasks_queue_router)
+app.include_router(graphql_router)
 
 # 注册异常处理器
 register_exceptions(app)
-app.include_router(entries_router)
-app.include_router(ci_cd_router)
-app.include_router(auth_router)
-app.include_router(tasks_queue_router)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -97,7 +120,35 @@ async def root():
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "name": settings.app_name, "version": settings.version}
+    return {
+        "status": "ok",
+        "name": settings.app_name,
+        "version": settings.version,
+        "features": {
+            "redis": app.state.redis.connected if hasattr(app.state, 'redis') else False,
+            "celery": True,
+            "graphql": True,
+            "telemetry": telemetry._enabled,
+            "metrics": True
+        }
+    }
+
+
+@app.get("/metrics")
+async def prometheus_metrics():
+    """Prometheus 指标端点"""
+    from starlette.responses import Response
+    return Response(content=metrics.collect(), media_type="text/plain")
+
+
+@app.get("/api/telemetry/stats")
+async def telemetry_stats():
+    """遥测统计"""
+    return {
+        "enabled": telemetry._enabled,
+        "tracer": telemetry._tracer is not None,
+        "meter": telemetry._meter is not None
+    }
 
 
 if __name__ == "__main__":

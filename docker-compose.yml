@@ -1,27 +1,33 @@
 version: '3.8'
+
 services:
-  testpilot:
+  # 主应用
+  app:
     build: .
     ports:
       - "8000:8000"
     environment:
+      - DATABASE_URL=postgresql+asyncpg://testpilot:testpass@postgres:5432/testpilot
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-me-in-production}
       - AI_API_KEY=${AI_API_KEY}
       - AI_BASE_URL=${AI_BASE_URL:-https://api.openai.com/v1}
       - AI_MODEL=${AI_MODEL:-gpt-4o}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-testpilot-secret}
-      - DATABASE_URL=sqlite+aiosqlite:////data/testpilot.db
+    depends_on:
+      - postgres
+      - redis
     volumes:
-      - ./data:/data
-      - ./screenshots:/app/screenshots
+      - ./data:/app/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-    networks:
-      - testpilot-net
 
+  # Redis 缓存
   redis:
     image: redis:7-alpine
     ports:
@@ -29,12 +35,80 @@ services:
     volumes:
       - redis_data:/data
     restart: unless-stopped
-    networks:
-      - testpilot-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=testpilot
+      - POSTGRES_PASSWORD=testpass
+      - POSTGRES_DB=testpilot
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U testpilot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Celery Worker
+  worker:
+    build: .
+    command: celery -A app.tasks.worker.celery_app worker --loglevel=info --concurrency=4
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - DATABASE_URL=postgresql+asyncpg://testpilot:testpass@postgres:5432/testpilot
+    depends_on:
+      - redis
+      - postgres
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+
+  # Celery Beat (定时任务)
+  beat:
+    build: .
+    command: celery -A app.tasks.worker.celery_app beat --loglevel=info
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # Prometheus 监控
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+
+  # Grafana 可视化
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    depends_on:
+      - prometheus
+    restart: unless-stopped
 
 volumes:
+  postgres_data:
   redis_data:
-
-networks:
-  testpilot-net:
-    driver: bridge
+  prometheus_data:
+  grafana_data:

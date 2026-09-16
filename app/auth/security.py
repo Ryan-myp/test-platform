@@ -14,6 +14,14 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24 hours
 
 
+class DateTimeEncoder(json.JSONEncoder):
+    """自定义 JSON 编码器，处理 datetime 对象"""
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
+
+
 def _base64url_encode(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).rstrip(b'=').decode()
 
@@ -29,12 +37,12 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     
-    header = _base64url_encode(json.dumps({"alg": ALGORITHM, "typ": "JWT"}).encode())
-    payload = _base64url_encode(json.dumps(to_encode).encode())
+    header = _base64url_encode(json.dumps({"alg": ALGORITHM, "typ": "JWT"}, cls=DateTimeEncoder).encode())
+    payload = _base64url_encode(json.dumps(to_encode, cls=DateTimeEncoder).encode())
     
-    # Simplified signing (in production, use proper HMAC)
+    # HMAC signing
     signing_input = f"{header}.{payload}"
-    secret = "testpilot-secret-key"  # Would come from settings
+    secret = "testpilot-secret-key"
     signature = _base64url_encode(
         hashlib.sha256(f"{signing_input}{secret}".encode()).digest()
     )
@@ -53,8 +61,10 @@ def decode_access_token(token: str) -> Optional[dict]:
         
         # Check expiration
         exp = payload.get('exp')
-        if exp and datetime.utcfromtimestamp(exp) < datetime.utcnow():
-            return None
+        if exp:
+            exp_dt = datetime.fromisoformat(exp)
+            if exp_dt < datetime.utcnow():
+                return None
         
         return payload
     except Exception:
